@@ -90,7 +90,10 @@
             "pages": [
               "api/animated-stack",
               "api/navigation-listener-mixin",
-              "api/lifecycle-observer"
+              "api/lifecycle-observer",
+              "api/conditional-route-widget",
+              "api/transparent-route",
+              "api/animation-widgets"
             ]
           }
         ]

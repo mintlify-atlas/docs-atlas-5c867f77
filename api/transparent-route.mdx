@@ -1,0 +1,187 @@
+---
+title: TransparentRoute & TransparentPage
+description: Transparent page routes that allow underlying pages to show through
+---
+
+## Overview
+
+`TransparentRoute` and `TransparentPage` provide transparent page routes that allow underlying content to remain visible. This is useful for overlays, modals, or dialogs that should not completely obscure the content beneath them.
+
+## TransparentPage
+
+A page that creates a transparent route when used with Navigator 2.
+
+### Constructor
+
+```dart
+const TransparentPage({
+  Key? key,
+  String? name,
+  Object? arguments,
+  String? restorationId,
+  required Widget child,
+  bool maintainState = true,
+  bool fullscreenDialog = false,
+  Color barrierColor = Colors.transparent,
+})
+```
+
+<ParamField path="child" type="Widget" required>
+  The content to be shown in the route created by this page.
+</ParamField>
+
+<ParamField path="maintainState" type="bool" default="true">
+  Whether to maintain the state of the route when it's not visible.
+</ParamField>
+
+<ParamField path="fullscreenDialog" type="bool" default="false">
+  Whether this page should be treated as a fullscreen dialog.
+</ParamField>
+
+<ParamField path="barrierColor" type="Color" default="Colors.transparent">
+  The color of the barrier that blocks interaction with routes below.
+</ParamField>
+
+### Usage with NavigationData
+
+```dart
+NavigationData(
+  label: 'overlay',
+  url: '/overlay',
+  pageBuilder: ({key, name, child, routeData, globalData, arguments}) {
+    return TransparentPage(
+      key: key,
+      name: name,
+      child: child,
+      barrierColor: Colors.black.withOpacity(0.5),
+    );
+  },
+  builder: (context, routeData, globalData) => MyOverlayWidget(),
+)
+```
+
+## TransparentRoute
+
+A programmatic transparent route for use with Navigator 1 API or custom navigation.
+
+### Constructor
+
+```dart
+TransparentRoute({
+  RouteSettings? settings,
+  bool? fullscreenDialog,
+  required WidgetBuilder builder,
+  bool maintainState = true,
+  RouteTransitionsBuilder transitionsBuilder = _defaultTransitionsBuilder,
+  Color barrierColor = Colors.transparent,
+})
+```
+
+<ParamField path="builder" type="WidgetBuilder" required>
+  Builder function for the route's widget.
+</ParamField>
+
+<ParamField path="maintainState" type="bool" default="true">
+  Whether to maintain the state of the route when it's not visible.
+</ParamField>
+
+<ParamField path="transitionsBuilder" type="RouteTransitionsBuilder">
+  Builder function for custom route transitions. Defaults to a simple fade transition.
+</ParamField>
+
+<ParamField path="barrierColor" type="Color" default="Colors.transparent">
+  The color of the barrier that blocks interaction with routes below.
+</ParamField>
+
+### Direct usage
+
+```dart
+Navigator.of(context).push(
+  TransparentRoute(
+    builder: (context) => MyOverlayContent(),
+    barrierColor: Colors.black.withOpacity(0.3),
+  ),
+);
+```
+
+## FadeUpwardsPageTransition
+
+The transparent routes use a custom fade upwards transition that preserves the appearance of underlying routes.
+
+```dart
+FadeUpwardsPageTransition({
+  required Animation<double> routeAnimation,
+  required Widget child,
+})
+```
+
+This transition:
+- Fades in the new route with an ease-in curve
+- Slides the content upwards from 1/4 screen below
+- Ensures underlying content remains visible and stationary
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Non-opaque routes" icon="eye">
+    Routes are not opaque, allowing content underneath to show through
+  </Card>
+  <Card title="Custom barrier colors" icon="palette">
+    Configure barrier color and opacity for different overlay effects
+  </Card>
+  <Card title="Preserved animations" icon="film">
+    Custom transitions prevent unwanted animations on underlying routes
+  </Card>
+  <Card title="Accessibility support" icon="universal-access">
+    Includes proper Semantics for screen readers
+  </Card>
+</CardGroup>
+
+## Common use cases
+
+### Modal overlays
+
+```dart
+TransparentPage(
+  child: Center(
+    child: Card(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: MyModalContent(),
+      ),
+    ),
+  ),
+  barrierColor: Colors.black.withOpacity(0.5),
+)
+```
+
+### Bottom sheets
+
+```dart
+TransparentPage(
+  child: Align(
+    alignment: Alignment.bottomCenter,
+    child: MyBottomSheet(),
+  ),
+  barrierColor: Colors.black.withOpacity(0.3),
+)
+```
+
+### Floating dialogs
+
+```dart
+TransparentPage(
+  child: Dialog(
+    child: MyDialogContent(),
+  ),
+  barrierColor: Colors.black.withOpacity(0.6),
+)
+```
+
+<Note>
+Transparent routes override default Android `OpenUpwardsPageTransition` and iOS `CupertinoSlideTransition` to ensure the route below stays stationary and visible.
+</Note>
+
+<Tip>
+Use `barrierColor` with partial opacity to create dimmed backgrounds that draw attention to the overlay while keeping underlying content visible.
+</Tip>

@@ -1,0 +1,234 @@
+---
+title: Animation widgets
+description: Pre-built animation widgets for nested navigation and page transitions
+---
+
+## Overview
+
+NavigationUtils provides pre-built animation widgets that can be used with `AnimatedStack` for nested navigation or custom page transitions. These widgets implement common Material Design animation patterns.
+
+## SharedAxisAnimation
+
+A widget that creates shared axis transitions with a sense of continuity between pages by animating along a shared axis (x, y, or z).
+
+### Constructor
+
+```dart
+const SharedAxisAnimation({
+  Key? key,
+  required Animation<double> animation,
+  required SharedAxisAnimationType transitionType,
+  required Widget? child,
+  bool reverse = false,
+})
+```
+
+<ParamField path="animation" type="Animation<double>" required>
+  The animation controller for the shared axis transition.
+</ParamField>
+
+<ParamField path="transitionType" type="SharedAxisAnimationType" required>
+  The type of shared axis transition to use: `vertical`, `horizontal`, or `scaled`.
+</ParamField>
+
+<ParamField path="child" type="Widget?" required>
+  The child widget to animate.
+</ParamField>
+
+<ParamField path="reverse" type="bool" default="false">
+  Whether to reverse the animation direction.
+</ParamField>
+
+### SharedAxisAnimationType enum
+
+```dart
+enum SharedAxisAnimationType {
+  /// Creates a shared axis vertical (y-axis) page transition
+  vertical,
+  
+  /// Creates a shared axis horizontal (x-axis) page transition
+  horizontal,
+  
+  /// Creates a shared axis scaled (z-axis) page transition
+  scaled,
+}
+```
+
+### Usage with AnimatedStack
+
+```dart
+AnimatedStack(
+  animationBuilder: (child, animation) {
+    return SharedAxisAnimation(
+      animation: animation,
+      transitionType: SharedAxisAnimationType.horizontal,
+      child: child,
+    );
+  },
+  children: pages,
+)
+```
+
+### Transition types
+
+**Horizontal** - Slides in from the side with fade
+```dart
+SharedAxisAnimation(
+  animation: animation,
+  transitionType: SharedAxisAnimationType.horizontal,
+  child: child,
+)
+```
+
+**Vertical** - Slides in from top/bottom with fade
+```dart
+SharedAxisAnimation(
+  animation: animation,
+  transitionType: SharedAxisAnimationType.vertical,
+  child: child,
+)
+```
+
+**Scaled** - Zooms in/out with fade
+```dart
+SharedAxisAnimation(
+  animation: animation,
+  transitionType: SharedAxisAnimationType.scaled,
+  child: child,
+)
+```
+
+## FadeThroughAnimation
+
+A fade-through animation widget that provides a fade and zoom animation effect, typically used for page transitions.
+
+### Constructor
+
+```dart
+const FadeThroughAnimation({
+  Key? key,
+  required Animation<double> animation,
+  Widget? child,
+})
+```
+
+<ParamField path="animation" type="Animation<double>" required>
+  The animation controller for the fade-through effect.
+</ParamField>
+
+<ParamField path="child" type="Widget?" optional>
+  The child widget to animate.
+</ParamField>
+
+### Usage
+
+```dart
+AnimatedStack(
+  animationBuilder: (child, animation) {
+    return FadeThroughAnimation(
+      animation: animation,
+      child: child,
+    );
+  },
+  children: pages,
+)
+```
+
+### How it works
+
+The fade-through animation creates a smooth transition by:
+1. Fading out the old page
+2. Zooming in the new page from 92% to 100% scale
+3. Fading in the new page
+
+This creates a subtle, polished transition effect that works well for tab navigation or content switching.
+
+## Complete example with nested navigation
+
+From the nested tabs example:
+
+```dart
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> nestedWidgets = NavigationManager.instance.nested(
+      context: context,
+      routes: [
+        NavigationData(
+          url: '/',
+          builder: (context, routeData, globalData) => FirstTab(),
+        ),
+        NavigationData(
+          url: '/second',
+          builder: (context, routeData, globalData) => SecondTab(),
+        ),
+      ],
+    );
+
+    return AnimatedStack(
+      animationBuilder: (child, animation) {
+        return SharedAxisAnimation(
+          animation: animation,
+          transitionType: SharedAxisAnimationType.horizontal,
+          child: child,
+        );
+      },
+      children: nestedWidgets,
+    );
+  }
+}
+```
+
+## Combining multiple animations
+
+You can create custom effects by combining animations:
+
+```dart
+AnimatedStack(
+  animationBuilder: (child, animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        ),
+        child: child,
+      ),
+    );
+  },
+  children: pages,
+)
+```
+
+## Available animation curves
+
+These widgets use Material Design animation curves:
+
+- `Easing.legacy` - Standard Material easing
+- `Easing.legacyDecelerate` - Deceleration curve
+- `Cubic(0.0, 0.0, 0.2, 1.0)` - Fast out, slow in
+
+<Tip>
+Use `SharedAxisAnimation` for navigating between tabs or sections, and `FadeThroughAnimation` for content that changes within the same context.
+</Tip>
+
+<Note>
+These animation widgets are designed to work with `AnimatedStack` and use Flutter's built-in animation system. They're based on Material Design motion patterns.
+</Note>
+
+## See also
+
+<CardGroup cols={2}>
+  <Card title="AnimatedStack" icon="layer-group" href="/api/animated-stack">
+    Widget for building animated nested navigation
+  </Card>
+  <Card title="Nested navigation guide" icon="sitemap" href="/guides/nested-navigation">
+    Complete guide to nested navigation
+  </Card>
+  <Card title="Custom transitions guide" icon="wand-magic-sparkles" href="/guides/custom-transitions">
+    Learn about custom page transitions
+  </Card>
+  <Card title="Nested tabs example" icon="grid" href="/examples/nested-tabs">
+    Full example with AnimatedStack
+  </Card>
+</CardGroup>

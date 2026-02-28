@@ -1,0 +1,111 @@
+---
+title: ConditionalRouteWidget
+description: A widget that conditionally applies a builder based on the current route
+---
+
+## Overview
+
+`ConditionalRouteWidget` is a widget that conditionally applies a builder function based on whether the current route matches certain criteria. This is useful for applying route-specific styling, wrapping widgets differently on certain pages, or implementing route-based behavior.
+
+## Constructor
+
+```dart
+const ConditionalRouteWidget({
+  Key? key,
+  List<String>? routes,
+  List<String>? routesExcluded,
+  required TransitionBuilder builder,
+  required Widget child,
+})
+```
+
+<ParamField path="routes" type="List<String>?" optional>
+  List of route names to include. If provided, the builder is applied only when the current route is in this list. Cannot be used together with `routesExcluded`.
+</ParamField>
+
+<ParamField path="routesExcluded" type="List<String>?" optional>
+  List of route names to exclude. If provided, the builder is applied only when the current route is NOT in this list. Cannot be used together with `routes`.
+</ParamField>
+
+<ParamField path="builder" type="TransitionBuilder" required>
+  Builder function to apply when the condition is met. Receives the `BuildContext` and `child` widget.
+</ParamField>
+
+<ParamField path="child" type="Widget" required>
+  The child widget to conditionally wrap.
+</ParamField>
+
+## Usage
+
+### Apply styling to specific routes
+
+```dart
+ConditionalRouteWidget(
+  routes: ['/home', '/profile'],
+  builder: (context, child) {
+    return Container(
+      color: Colors.blue.shade50,
+      child: child,
+    );
+  },
+  child: MyContent(),
+)
+```
+
+### Exclude routes from styling
+
+```dart
+ConditionalRouteWidget(
+  routesExcluded: ['/login', '/signup'],
+  builder: (context, child) {
+    return SafeArea(
+      child: child,
+    );
+  },
+  child: MyApp(),
+)
+```
+
+### Apply navigation bar to most routes
+
+```dart
+ConditionalRouteWidget(
+  routesExcluded: ['/splash', '/onboarding'],
+  builder: (context, child) {
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: MyNavigationBar(),
+    );
+  },
+  child: currentPage,
+)
+```
+
+## How it works
+
+The widget checks the current route using `ModalRoute.of(context)?.settings.name` and applies the builder function only when the route matches the specified conditions:
+
+- If `routes` is provided, the builder is applied when the current route is in the list
+- If `routesExcluded` is provided, the builder is applied when the current route is NOT in the list
+- If neither condition is met, the child is returned without modification
+
+<Note>
+You cannot provide both `routes` and `routesExcluded` at the same time. Choose one approach based on your use case.
+</Note>
+
+## Common use cases
+
+<CardGroup cols={2}>
+  <Card title="Route-specific layouts" icon="table-layout">
+    Apply different layouts or containers to specific routes
+  </Card>
+  <Card title="Conditional navigation bars" icon="bars">
+    Show or hide navigation elements on certain pages
+  </Card>
+  <Card title="Safe area handling" icon="border-all">
+    Apply SafeArea only to routes that need it
+  </Card>
+  <Card title="Theme variations" icon="palette">
+    Apply different themes or styling to specific route groups
+  </Card>
+</CardGroup>
