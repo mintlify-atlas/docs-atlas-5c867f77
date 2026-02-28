@@ -1,0 +1,362 @@
+---
+title: LifecycleObserver
+description: Base AppLifecycleState callback class and mixins
+---
+
+Classes and mixins for observing app lifecycle state changes and invoking callbacks when the app state changes.
+
+## LifecycleObserver
+
+Base AppLifecycleState callback class. This class observes app lifecycle state changes and invokes the appropriate callbacks when the app state changes.
+
+### Properties
+
+<ResponseField name="onResumeCallback" type="VoidCallback?">
+  Callback invoked when the app enters the resumed state.
+</ResponseField>
+
+<ResponseField name="onPauseCallback" type="VoidCallback?">
+  Callback invoked when the app enters the paused state.
+</ResponseField>
+
+<ResponseField name="onDetachedCallback" type="VoidCallback?">
+  Callback invoked when the app enters the detached state.
+</ResponseField>
+
+<ResponseField name="onInactiveCallback" type="VoidCallback?">
+  Callback invoked when the app enters the inactive state.
+</ResponseField>
+
+<ResponseField name="onHiddenCallback" type="VoidCallback?">
+  Callback invoked when the app enters the hidden state.
+</ResponseField>
+
+### Constructor
+
+```dart
+LifecycleObserver({
+  VoidCallback? onResumeCallback,
+  VoidCallback? onPauseCallback,
+  VoidCallback? onDetachedCallback,
+  VoidCallback? onInactiveCallback,
+  VoidCallback? onHiddenCallback
+})
+```
+
+Creates a LifecycleObserver with optional callbacks for each lifecycle state. All callbacks are optional and can be null if not needed.
+
+## LifecycleObserverMixin
+
+A mixin that provides lifecycle observation capabilities to any class. This mixin allows classes to observe app lifecycle state changes by automatically setting up a LifecycleObserver and registering it with the widget binding.
+
+### Properties
+
+<ResponseField name="lifecycleObserver" type="LifecycleObserver">
+  The lifecycle observer instance.
+</ResponseField>
+
+### Methods
+
+#### initLifecycleObserver
+
+```dart
+void initLifecycleObserver()
+```
+
+Initializes the lifecycle observer with callbacks. This method should be called to set up lifecycle observation. It creates a LifecycleObserver with the mixin's callback methods and registers it with WidgetsBinding.
+
+#### onPaused
+
+```dart
+void onPaused()
+```
+
+Called when the app enters the paused state. Override this method to handle app pause events.
+
+#### onResumed
+
+```dart
+void onResumed()
+```
+
+Called when the app enters the resumed state. Override this method to handle app resume events.
+
+#### onInactive
+
+```dart
+void onInactive()
+```
+
+Called when the app enters the inactive state. Override this method to handle app inactive events.
+
+#### onDetached
+
+```dart
+void onDetached()
+```
+
+Called when the app enters the detached state. Override this method to handle app detached events.
+
+#### onHidden
+
+```dart
+void onHidden()
+```
+
+Called when the app enters the hidden state. Override this method to handle app hidden events.
+
+#### disposeLifecycleObserver
+
+```dart
+void disposeLifecycleObserver()
+```
+
+Disposes the lifecycle observer and removes it from the widget binding. This method should be called when lifecycle observation is no longer needed.
+
+## LifecycleObserverStateMixin
+
+A mixin that provides lifecycle observation capabilities to State classes. This mixin automatically initializes lifecycle observation in `initState` and disposes it in `dispose`, making it convenient for use in StatefulWidgets.
+
+### Properties
+
+<ResponseField name="lifecycleObserver" type="LifecycleObserver">
+  The lifecycle observer instance.
+</ResponseField>
+
+### Methods
+
+#### onPaused
+
+```dart
+void onPaused()
+```
+
+Called when the app enters the paused state. Override this method to handle app pause events.
+
+#### onResumed
+
+```dart
+void onResumed()
+```
+
+Called when the app enters the resumed state. Override this method to handle app resume events.
+
+#### onInactive
+
+```dart
+void onInactive()
+```
+
+Called when the app enters the inactive state. Override this method to handle app inactive events.
+
+#### onDetached
+
+```dart
+void onDetached()
+```
+
+Called when the app enters the detached state. Override this method to handle app detached events.
+
+#### onHidden
+
+```dart
+void onHidden()
+```
+
+Called when the app enters the hidden state. Override this method to handle app hidden events.
+
+## LifecycleObserverChangeNotifierMixin
+
+A mixin that provides lifecycle observation capabilities to ChangeNotifier classes. The lifecycle observer is automatically disposed when the ChangeNotifier is disposed.
+
+### Properties
+
+<ResponseField name="lifecycleObserver" type="LifecycleObserver">
+  The lifecycle observer instance.
+</ResponseField>
+
+### Methods
+
+#### initLifecycleObserverListener
+
+```dart
+void initLifecycleObserverListener()
+```
+
+Initializes the lifecycle observer with callbacks. This method should be called to set up lifecycle observation.
+
+#### onPaused
+
+```dart
+void onPaused()
+```
+
+Called when the app enters the paused state. Override this method to handle app pause events.
+
+#### onResumed
+
+```dart
+void onResumed()
+```
+
+Called when the app enters the resumed state. Override this method to handle app resume events.
+
+#### onInactive
+
+```dart
+void onInactive()
+```
+
+Called when the app enters the inactive state. Override this method to handle app inactive events.
+
+#### onDetached
+
+```dart
+void onDetached()
+```
+
+Called when the app enters the detached state. Override this method to handle app detached events.
+
+#### onHidden
+
+```dart
+void onHidden()
+```
+
+Called when the app enters the hidden state. Override this method to handle app hidden events.
+
+## Examples
+
+### Using LifecycleObserver directly
+
+```dart
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late LifecycleObserver lifecycleObserver;
+
+  @override
+  void initState() {
+    super.initState();
+    lifecycleObserver = LifecycleObserver(
+      onResumeCallback: () {
+        print('App resumed');
+      },
+      onPauseCallback: () {
+        print('App paused');
+      },
+    );
+    WidgetsBinding.instance.addObserver(lifecycleObserver);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(lifecycleObserver);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(home: HomePage());
+  }
+}
+```
+
+### Using LifecycleObserverMixin
+
+```dart
+class MyController with LifecycleObserverMixin {
+  void init() {
+    initLifecycleObserver();
+  }
+
+  @override
+  void onResumed() {
+    print('App resumed - refresh data');
+  }
+
+  @override
+  void onPaused() {
+    print('App paused - save state');
+  }
+
+  void dispose() {
+    disposeLifecycleObserver();
+  }
+}
+```
+
+### Using LifecycleObserverStateMixin
+
+```dart
+class MyPage extends StatefulWidget {
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> with LifecycleObserverStateMixin {
+  @override
+  void onResumed() {
+    print('App resumed');
+    // Refresh data, restart animations, etc.
+  }
+
+  @override
+  void onPaused() {
+    print('App paused');
+    // Pause animations, save state, etc.
+  }
+
+  @override
+  void onInactive() {
+    print('App inactive');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('My Page')),
+      body: Center(child: Text('Content')),
+    );
+  }
+}
+```
+
+### Using LifecycleObserverChangeNotifierMixin
+
+```dart
+class MyViewModel extends ChangeNotifier with LifecycleObserverChangeNotifierMixin {
+  bool _isActive = false;
+
+  void init() {
+    initLifecycleObserverListener();
+  }
+
+  @override
+  void onResumed() {
+    _isActive = true;
+    notifyListeners();
+  }
+
+  @override
+  void onPaused() {
+    _isActive = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+}
+```
+
+## Notes
+
+- The LifecycleObserver is automatically registered and unregistered with WidgetsBinding
+- State mixin variant handles initialization and disposal automatically
+- All lifecycle callbacks are optional - only override the ones you need
+- For ChangeNotifier mixin, call `initLifecycleObserverListener()` manually (not automatic like StateMixin)

@@ -1,80 +1,295 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get up and running with NavigationUtils in 5 lines of code
 ---
 
-## Get started in three steps
+## Get started in 5 lines
 
-Get your documentation site running locally and make your first customization.
+This quickstart guide shows you how to set up NavigationUtils with a minimal working example. You'll have Navigator 2 working in your app in under 5 minutes.
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Install NavigationUtils">
+    Add NavigationUtils to your `pubspec.yaml`:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```yaml pubspec.yaml
+    dependencies:
+      navigation_utils: ^0.9.11
+    ```
 
-### Step 2: Deploy your changes
+    Then run:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```bash
+    flutter pub get
+    ```
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Import the package">
+    Import NavigationUtils in your main file:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```dart main.dart
+    import 'package:navigation_utils/navigation_utils.dart';
+    ```
+  </Step>
 
-### Step 3: Go live
+  <Step title="Define your routes">
+    Create a list of `NavigationData` to define your app's routes:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    ```dart main.dart
+    List<NavigationData> routes = [
+      NavigationData(
+        label: MyHomePage.name,
+        url: '/',
+        builder: (context, routeData, globalData) => const MyHomePage(),
+      ),
+      NavigationData(
+        label: ProjectPage.name,
+        url: '/project/:id',
+        builder: (context, routeData, globalData) => ProjectPage(
+          id: int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0,
+        ),
+      ),
+    ];
+    ```
+
+    <Note>
+      Each route needs a `url` because NavigationData maps URLs to pages. The `label` is optional and enables named routing like Navigator 1.
+    </Note>
+  </Step>
+
+  <Step title="Initialize NavigationManager">
+    Initialize NavigationManager before running your app:
+
+    ```dart main.dart
+    void main() {
+      NavigationManager.init(
+        mainRouterDelegate: DefaultRouterDelegate(navigationDataRoutes: routes),
+        routeInformationParser: DefaultRouteInformationParser(),
+      );
+      runApp(const MyApp());
+    }
+    ```
+
+    <Tip>
+      `DefaultRouterDelegate` and `DefaultRouteInformationParser` are convenience classes that handle the Navigator 2 boilerplate for you.
+    </Tip>
+  </Step>
+
+  <Step title="Configure MaterialApp.router">
+    Use `MaterialApp.router` with NavigationManager's delegates:
+
+    ```dart main.dart
+    class MyApp extends StatelessWidget {
+      const MyApp({super.key});
+
+      @override
+      Widget build(BuildContext context) {
+        return MaterialApp.router(
+          title: 'Navigation Utils Demo',
+          routerDelegate: NavigationManager.instance.routerDelegate,
+          routeInformationParser: NavigationManager.instance.routeInformationParser,
+        );
+      }
+    }
+    ```
+
+    <Note>
+      Navigator 2 uses `MaterialApp.router` instead of `MaterialApp`. The `routerDelegate` and `routeInformationParser` replace the `routes` and `onGenerateRoute` from Navigator 1.
+    </Note>
+  </Step>
+</Steps>
+
+## Navigate between pages
+
+With NavigationUtils set up, you can navigate using familiar Navigator 1 methods:
+
+<CodeGroup>
+
+```dart Path-based navigation
+// Navigate using URL paths
+NavigationManager.instance.push('/project/1');
+```
+
+```dart Named navigation
+// Navigate using route names
+NavigationManager.instance.push(
+  ProjectPage.name,
+  pathParameters: {'id': '2'},
+);
+```
+
+```dart Pop navigation
+// Go back
+NavigationManager.instance.pop();
+```
+
+</CodeGroup>
+
+## Complete example
+
+Here's the complete minimal example from `example/lib/main.dart`:
+
+```dart main.dart
+import 'package:flutter/material.dart';
+import 'package:navigation_utils/navigation_utils.dart';
+
+List<NavigationData> routes = [
+  NavigationData(
+    label: MyHomePage.name,
+    url: '/',
+    builder: (context, routeData, globalData) => const MyHomePage(),
+  ),
+  NavigationData(
+    label: ProjectPage.name,
+    url: '/project/:id',
+    builder: (context, routeData, globalData) => ProjectPage(
+      id: int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0,
+    ),
+  ),
+];
+
+void main() {
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(navigationDataRoutes: routes),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+
+class MyHomePage extends StatelessWidget {
+  static const String name = 'home';
+  const MyHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () => NavigationManager.instance.push('/project/1'),
+              child: const Text('Open Project (Path)'),
+            ),
+            ElevatedButton(
+              onPressed: () => NavigationManager.instance.push(
+                ProjectPage.name,
+                pathParameters: {'id': '2'},
+              ),
+              child: const Text('Open Project (Named)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProjectPage extends StatelessWidget {
+  static const String name = 'project';
+  final int id;
+
+  const ProjectPage({super.key, required this.id});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Project $id')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Project Page $id'),
+            ElevatedButton(
+              onPressed: () => NavigationManager.instance.pop(),
+              child: const Text('Back'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Enable hot reload for routes
+
+When developing, you'll want hot reload to pick up route changes. Add this to your root widget:
+
+```dart main.dart
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routes;
+    super.reassemble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+<Tip>
+  Use a getter for `routes` and avoid `final` so new instances can be created on hot reload.
+</Tip>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you have NavigationUtils working, explore these features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card
+    title="Query parameters"
+    icon="question"
+    href="/guides/query-parameters"
+  >
+    Pass data between pages using URL query parameters
+  </Card>
+  <Card
+    title="Path parameters"
+    icon="slash"
+    href="/guides/path-parameters"
+  >
+    Capture dynamic URL segments like `/user/:userId`
+  </Card>
+  <Card
+    title="Navigation methods"
+    icon="arrows-rotate"
+    href="/guides/basic-navigation"
+  >
+    Learn about `pushReplacement()`, `popUntil()`, `set()`, and more
+  </Card>
+  <Card
+    title="Deeplinks"
+    icon="arrow-up-right-from-square"
+    href="/guides/deeplinks"
+  >
+    Handle deeplinks with authentication and custom logic
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

@@ -1,0 +1,232 @@
+---
+title: Router delegates
+description: BaseRouterDelegate and DefaultRouterDelegate classes
+---
+
+Router delegate classes that manage navigation state and build the Navigator widget.
+
+## BaseRouterDelegate
+
+Base class for router delegates. The RouteDelegate defines application specific behaviors of how the router learns about changes in the application state and how it responds to them.
+
+This abstract class provides the core navigation functionality and should be extended to create custom router delegates.
+
+### Properties
+
+<ResponseField name="navigatorKey" type="GlobalKey<NavigatorState>">
+  Global key for the Navigator widget. Persists the navigator across rebuilds.
+</ResponseField>
+
+<ResponseField name="routes" type="List<DefaultRoute>">
+  The current list of routes in the navigation stack.
+</ResponseField>
+
+<ResponseField name="canPop" type="bool">
+  Whether the current route can be popped. Returns false if canPop was explicitly set to false, or if there are no routes in the stack.
+</ResponseField>
+
+<ResponseField name="currentConfiguration" type="DefaultRoute?">
+  Returns the last route in the stack, or null if the stack is empty. Helps complete the browser history and enables browser back and forward buttons.
+</ResponseField>
+
+<ResponseField name="getCurrentRoute" type="Stream<DefaultRoute>">
+  Stream of current route changes. Listen to this stream to be notified when the current route changes.
+</ResponseField>
+
+<ResponseField name="globalData" type="Map<String, dynamic>">
+  Global data map for storing route-specific data.
+</ResponseField>
+
+<ResponseField name="navigationDataRoutes" type="List<NavigationData>">
+  List of navigation data routes. This must be set by the implementing class.
+</ResponseField>
+
+<ResponseField name="pageOverride" type="Page Function(String name)?">
+  Optional page override function. If set, this function is called to build a page that overrides the normal navigation stack. Useful for loading screens.
+</ResponseField>
+
+<ResponseField name="pageOverlay" type="Page Function(String name)?">
+  Optional page overlay function. If set, this function is called to build a page that overlays the normal navigation stack. Useful for lock screens.
+</ResponseField>
+
+<ResponseField name="setMainRoutes" type="SetMainRoutesCallback?">
+  Exposes the routes history to the implementation to allow modifying the navigation stack based on app state.
+</ResponseField>
+
+<ResponseField name="onUnknownRoute" type="OnUnknownRoute?">
+  Unknown route generation function.
+</ResponseField>
+
+<ResponseField name="debugLog" type="bool">
+  Whether to enable debug logging for navigation operations. When enabled, navigation operations will print debug messages to help with troubleshooting.
+</ResponseField>
+
+### Methods
+
+BaseRouterDelegate implements all methods from NavigationInterface. See [NavigationManager](/api/navigation-manager) for the complete list of navigation methods including:
+
+- `push`, `pushRoute`
+- `pop`, `popUntil`, `popUntilRoute`
+- `pushAndRemoveUntil`, `pushAndRemoveUntilRoute`
+- `remove`, `removeRoute`
+- `pushReplacement`, `pushReplacementRoute`
+- `removeBelow`, `removeRouteBelow`
+- `removeAbove`, `removeRouteAbove`
+- `removeGroup`
+- `replace`, `replaceRoute`
+- `replaceBelow`, `replaceRouteBelow`
+- `set`, `setRoutes`
+- `setBackstack`, `setBackstackRoutes`
+- `setOverride`, `removeOverride`
+- `setOverlay`, `removeOverlay`
+- `setQueryParameters`
+- `navigate`, `neglect`
+- `apply`, `clear`
+
+## DefaultRouterDelegate
+
+Default implementation of BaseRouterDelegate. This class provides a complete router delegate implementation with support for deeplinks, custom page builders, and navigation observers.
+
+### Constructor
+
+```dart
+DefaultRouterDelegate({
+  required List<NavigationData> navigationDataRoutes,
+  bool debugLog = false,
+  OnUnknownRoute? onUnknownRoute,
+  CustomPageBuilder? pageBuilder,
+  MigrationPageBuilder? migrationPageBuilder,
+  List<NavigatorObserver> observers = const [],
+  List<DeeplinkDestination> deeplinkDestinations = const [],
+  bool? Function(Uri uri)? customDeeplinkHandler,
+  bool authenticated = true,
+  List<String> excludeDeeplinkNavigationPages = const [],
+  PopPageCallback? onPopPage
+})
+```
+
+<ParamField path="navigationDataRoutes" type="List<NavigationData>" required>
+  List of navigation routes.
+</ParamField>
+
+<ParamField path="debugLog" type="bool" default="false">
+  Whether to enable debug logging.
+</ParamField>
+
+<ParamField path="onUnknownRoute" type="OnUnknownRoute?">
+  Handler for unknown routes.
+</ParamField>
+
+<ParamField path="pageBuilder" type="CustomPageBuilder?">
+  Optional custom page builder for all routes.
+</ParamField>
+
+<ParamField path="migrationPageBuilder" type="MigrationPageBuilder?">
+  Optional migration page builder for legacy route support.
+</ParamField>
+
+<ParamField path="observers" type="List<NavigatorObserver>" default="[]">
+  List of navigation observers to attach to the Navigator.
+</ParamField>
+
+<ParamField path="deeplinkDestinations" type="List<DeeplinkDestination>" default="[]">
+  List of deeplink destinations to handle.
+</ParamField>
+
+<ParamField path="customDeeplinkHandler" type="bool? Function(Uri uri)?">
+  Optional custom deeplink handler function. If provided, this function is called for all incoming deeplinks. Return true if the deeplink was handled, false otherwise.
+</ParamField>
+
+<ParamField path="authenticated" type="bool" default="true">
+  Whether the user is currently authenticated. Used to determine if authenticated deeplinks can be opened.
+</ParamField>
+
+<ParamField path="excludeDeeplinkNavigationPages" type="List<String>" default="[]">
+  List of route names/paths to exclude from deeplink navigation.
+</ParamField>
+
+<ParamField path="onPopPage" type="PopPageCallback?">
+  Optional callback for handling pop page events.
+</ParamField>
+
+### Properties
+
+<ResponseField name="pageBuilder" type="CustomPageBuilder?">
+  Optional custom page builder for all routes.
+</ResponseField>
+
+<ResponseField name="migrationPageBuilder" type="MigrationPageBuilder?">
+  Optional migration page builder for legacy route support.
+</ResponseField>
+
+<ResponseField name="observers" type="List<NavigatorObserver>">
+  List of navigation observers to attach to the Navigator.
+</ResponseField>
+
+<ResponseField name="deeplinkDestinations" type="List<DeeplinkDestination>">
+  List of deeplink destinations to handle.
+</ResponseField>
+
+<ResponseField name="customDeeplinkHandler" type="bool? Function(Uri uri)?">
+  Optional custom deeplink handler function.
+</ResponseField>
+
+<ResponseField name="authenticated" type="bool">
+  Whether the user is currently authenticated.
+</ResponseField>
+
+<ResponseField name="excludeDeeplinkNavigationPages" type="List<String>">
+  List of route names/paths to exclude from deeplink navigation.
+</ResponseField>
+
+<ResponseField name="onPopPage" type="PopPageCallback?">
+  Optional callback for handling pop page events.
+</ResponseField>
+
+### Methods
+
+#### build
+
+```dart
+Widget build(BuildContext context)
+```
+
+Builds the Navigator widget with the current pages.
+
+#### setNewRoutePath
+
+```dart
+Future<void> setNewRoutePath(DefaultRoute configuration)
+```
+
+Handles new route paths, including deeplink processing.
+
+## Example
+
+```dart
+// Create a router delegate
+final routerDelegate = DefaultRouterDelegate(
+  navigationDataRoutes: [
+    NavigationData(
+      label: 'home',
+      url: '/home',
+      builder: (context, route, data) => HomePage(),
+    ),
+    NavigationData(
+      label: 'profile',
+      url: '/profile',
+      builder: (context, route, data) => ProfilePage(),
+    ),
+  ],
+  debugLog: true,
+  onUnknownRoute: (route) => MaterialPage(
+    child: NotFoundPage(),
+  ),
+);
+
+// Use in MaterialApp.router
+MaterialApp.router(
+  routerDelegate: routerDelegate,
+  routeInformationParser: routeInformationParser,
+);
+```

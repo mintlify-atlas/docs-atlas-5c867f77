@@ -1,0 +1,254 @@
+---
+title: Installation
+description: Add NavigationUtils to your Flutter project
+---
+
+## Requirements
+
+NavigationUtils requires:
+- **Flutter SDK**: 3.10.0 or higher
+- **Dart SDK**: 2.17.1 or higher
+
+NavigationUtils supports all Flutter platforms:
+- Android
+- iOS
+- Web
+- macOS
+- Windows
+- Linux
+
+## Install from pub.dev
+
+<Steps>
+  <Step title="Add dependency">
+    Add NavigationUtils to your `pubspec.yaml`:
+
+    ```yaml pubspec.yaml
+    dependencies:
+      navigation_utils: ^0.9.11
+    ```
+
+    Or run this command in your terminal:
+
+    ```bash
+    flutter pub add navigation_utils
+    ```
+  </Step>
+
+  <Step title="Install packages">
+    Get the package:
+
+    ```bash
+    flutter pub get
+    ```
+  </Step>
+
+  <Step title="Import the package">
+    Import NavigationUtils in your Dart files:
+
+    ```dart
+    import 'package:navigation_utils/navigation_utils.dart';
+    ```
+  </Step>
+</Steps>
+
+## Verify installation
+
+Create a minimal app to verify NavigationUtils is working:
+
+```dart main.dart
+import 'package:flutter/material.dart';
+import 'package:navigation_utils/navigation_utils.dart';
+
+void main() {
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(
+      navigationDataRoutes: [
+        NavigationData(
+          url: '/',
+          builder: (context, routeData, globalData) => Scaffold(
+            appBar: AppBar(title: const Text('NavigationUtils Works!')),
+            body: const Center(child: Text('Installation successful')),
+          ),
+        ),
+      ],
+    ),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'NavigationUtils Test',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+Run the app:
+
+```bash
+flutter run
+```
+
+If you see "Installation successful", NavigationUtils is ready to use!
+
+## Web-specific setup (optional)
+
+For web apps, you may want to use path-based URLs instead of the default hash-based URLs.
+
+Add the `flutter_web_plugins` dependency:
+
+```yaml pubspec.yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  navigation_utils: ^0.9.11
+  flutter_web_plugins:
+    sdk: flutter
+```
+
+Then configure the URL strategy in your `main()` function:
+
+```dart main.dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:navigation_utils/navigation_utils.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Enable path-based URLs for web
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+  
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(navigationDataRoutes: routes),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  
+  runApp(const MyApp());
+}
+```
+
+<Note>
+  This changes URLs from `example.com/#/page` to `example.com/page`. This is purely aesthetic - NavigationUtils works with both URL strategies.
+</Note>
+
+## Package information
+
+<CardGroup cols={2}>
+  <Card
+    title="pub.dev"
+    icon="cube"
+    href="https://pub.dev/packages/navigation_utils"
+  >
+    View on pub.dev for version history and API docs
+  </Card>
+  <Card
+    title="GitHub"
+    icon="github"
+    href="https://github.com/rayliverified/NavigationUtils"
+  >
+    Source code, issues, and contributions
+  </Card>
+  <Card
+    title="Changelog"
+    icon="clock-rotate-left"
+    href="https://github.com/rayliverified/NavigationUtils/blob/master/CHANGELOG.md"
+  >
+    See what's new in each version
+  </Card>
+  <Card
+    title="Examples"
+    icon="code"
+    href="https://github.com/rayliverified/NavigationUtils/tree/master/example"
+  >
+    Working examples including authentication flows
+  </Card>
+</CardGroup>
+
+## Migration from Navigator 1
+
+If you're migrating from Navigator 1, the good news is NavigationUtils reimplements the Navigator 1 API, so your navigation code will look very similar.
+
+### Before (Navigator 1)
+
+```dart
+// Define routes
+MaterialApp(
+  routes: {
+    '/': (context) => HomePage(),
+    '/projects': (context) => ProjectsPage(),
+  },
+  onGenerateRoute: (settings) {
+    // Handle dynamic routes
+  },
+);
+
+// Navigate
+Navigator.of(context).pushNamed('/projects');
+Navigator.of(context).pop();
+```
+
+### After (Navigator 2 with NavigationUtils)
+
+```dart
+// Define routes
+List<NavigationData> routes = [
+  NavigationData(
+    label: 'home',
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(),
+  ),
+  NavigationData(
+    label: 'projects',
+    url: '/projects',
+    builder: (context, routeData, globalData) => ProjectsPage(),
+  ),
+];
+
+// Initialize
+void main() {
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(navigationDataRoutes: routes),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  runApp(const MyApp());
+}
+
+// Use MaterialApp.router
+MaterialApp.router(
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  routeInformationParser: NavigationManager.instance.routeInformationParser,
+);
+
+// Navigate (no context needed!)
+NavigationManager.instance.push('projects');
+NavigationManager.instance.pop();
+```
+
+<Tip>
+  One major advantage: NavigationUtils doesn't require `BuildContext` for navigation. Access it globally via `NavigationManager.instance`.
+</Tip>
+
+## Next steps
+
+Now that NavigationUtils is installed, follow the quickstart guide to build your first app:
+
+<Card
+  title="Quickstart"
+  icon="bolt"
+  href="/quickstart"
+>
+  Get up and running in 5 lines of code
+</Card>

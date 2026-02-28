@@ -1,0 +1,137 @@
+---
+title: DefaultRouteInformationParser
+description: Parser that converts route information into DefaultRoute objects
+---
+
+The RouteInformationParser takes the RouteInformation from a RouteInformationProvider and parses it into a user-defined data type. This implementation parses route information into DefaultRoute objects.
+
+## Properties
+
+<ResponseField name="routeUri" type="Uri">
+  The current route URI.
+</ResponseField>
+
+<ResponseField name="initialRoute" type="String">
+  The initial route path.
+</ResponseField>
+
+<ResponseField name="initialized" type="bool">
+  Whether the parser has been initialized.
+</ResponseField>
+
+<ResponseField name="defaultRoute" type="DefaultRoute?">
+  Optional default route to use on initialization.
+</ResponseField>
+
+<ResponseField name="defaultRoutePath" type="String?">
+  Optional default route path to use on initialization.
+</ResponseField>
+
+<ResponseField name="setInitialRouteFunction" type="DefaultRoute Function(Uri initialRoute)?">
+  Optional function to set the initial route from a URI.
+</ResponseField>
+
+<ResponseField name="setInitialRoutePathFunction" type="String Function(Uri initialRoute)?">
+  Optional function to set the initial route path from a URI.
+</ResponseField>
+
+<ResponseField name="debugLog" type="bool">
+  Whether to enable debug logging.
+</ResponseField>
+
+## Constructor
+
+```dart
+DefaultRouteInformationParser({
+  DefaultRoute? defaultRoute,
+  String? defaultRoutePath,
+  DefaultRoute Function(Uri initialRoute)? setInitialRouteFunction,
+  String Function(Uri initialRoute)? setInitialRoutePathFunction,
+  bool debugLog = false
+})
+```
+
+<ParamField path="defaultRoute" type="DefaultRoute?">
+  Optional default route to use on initialization.
+</ParamField>
+
+<ParamField path="defaultRoutePath" type="String?">
+  Optional default route path (must start with '/').
+</ParamField>
+
+<ParamField path="setInitialRouteFunction" type="DefaultRoute Function(Uri initialRoute)?">
+  Optional function to set initial route from URI.
+</ParamField>
+
+<ParamField path="setInitialRoutePathFunction" type="String Function(Uri initialRoute)?">
+  Optional function to set initial route path from URI.
+</ParamField>
+
+<ParamField path="debugLog" type="bool" default="false">
+  Whether to enable debug logging.
+</ParamField>
+
+## Methods
+
+### parseRouteInformation
+
+```dart
+Future<DefaultRoute> parseRouteInformation(RouteInformation routeInformation)
+```
+
+Parses the route information into a DefaultRoute. This method is called by the Flutter framework.
+
+<ParamField path="routeInformation" type="RouteInformation" required>
+  The route information to parse.
+</ParamField>
+
+Returns a Future that resolves to a DefaultRoute.
+
+### restoreRouteInformation
+
+```dart
+RouteInformation? restoreRouteInformation(DefaultRoute configuration)
+```
+
+Restores route information from a DefaultRoute. This method is called by the Flutter framework.
+
+<ParamField path="configuration" type="DefaultRoute" required>
+  The DefaultRoute to convert to RouteInformation.
+</ParamField>
+
+Returns a RouteInformation object or null.
+
+## Example
+
+```dart
+// Basic usage
+final parser = DefaultRouteInformationParser(
+  defaultRoutePath: '/home',
+  debugLog: true,
+);
+
+// With custom initial route function
+final parser = DefaultRouteInformationParser(
+  setInitialRouteFunction: (uri) {
+    // Custom logic to determine initial route
+    if (uri.path == '/') {
+      return DefaultRoute.fromUrl('/home');
+    }
+    return DefaultRoute.fromUri(uri);
+  },
+);
+
+// With default route object
+final parser = DefaultRouteInformationParser(
+  defaultRoute: DefaultRoute(
+    path: '/home',
+    label: 'home',
+  ),
+);
+
+// Use in MaterialApp.router
+MaterialApp.router(
+  routerDelegate: routerDelegate,
+  routeInformationParser: parser,
+);
+```

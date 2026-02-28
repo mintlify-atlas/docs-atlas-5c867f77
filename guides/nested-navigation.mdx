@@ -1,0 +1,497 @@
+---
+title: Nested navigation
+description: Implement nested navigators for tab bars and complex navigation hierarchies
+---
+
+<Note>
+Nested navigation is currently in BETA. The API may change in future releases.
+</Note>
+
+Nested navigation allows you to implement complex navigation hierarchies like tab bars, split views, and multi-level navigation within your app. NavigationUtils provides the `nested()` method to build nested navigation stacks.
+
+## Basic nested navigation
+
+Use `NavigationManager.instance.nested()` to create a nested navigation context:
+
+```dart
+NavigationManager.instance.nested(
+  context: context,
+  routes: pages,
+)
+```
+
+This returns a list of widgets matching the current route, which you can display in a custom layout.
+
+## Nested tabs example
+
+The example app in `example/lib/main_nested_tabs.dart` demonstrates a complete nested tab navigation implementation.
+
+### Define routes for nested tabs
+
+From `example/lib/main_nested_tabs.dart:9-25`:
+
+```dart
+List<NavigationData> routes = [
+  NavigationData(
+      label: FirstPage.name,
+      url: '/',
+      builder: (context, routeData, globalData) => const MyHomePage(),
+      group: MyHomePage.name),
+  NavigationData(
+      label: SecondPage.name,
+      url: '/second',
+      builder: (context, routeData, globalData) => const MyHomePage(),
+      group: MyHomePage.name),
+  NavigationData(
+      label: NestedSecondPage.name,
+      url: '/second/2',
+      builder: (context, routeData, globalData) => const MyHomePage(),
+      group: MyHomePage.name),
+];
+```
+
+<Note>
+All routes use the same `group` (MyHomePage.name), which means they share the same widget instance and preserve state during navigation.
+</Note>
+
+### Implement the parent page
+
+The parent page manages the nested navigation and tab state:
+
+From `example/lib/main_nested_tabs.dart:60-168`:
+
+```dart
+class _MyHomePageState extends State<MyHomePage> {
+  int selectedIndex = 0;
+
+  List<NavigationData> pages = [
+    NavigationData(
+      label: FirstPage.name,
+      url: '/',
+      builder: (context, routeData, globalData) =>
+          const FirstPage(key: ValueKey(FirstPage.name)),
+    ),
+    NavigationData(
+      label: SecondPage.name,
+      url: '/second',
+      builder: (context, routeData, globalData) =>
+          const SecondPage(key: ValueKey(SecondPage.name)),
+    ),
+    NavigationData(
+      label: NestedSecondPage.name,
+      url: '/second/2',
+      builder: (context, routeData, globalData) =>
+          const SecondPage(key: ValueKey(SecondPage.name)),
+    ),
+  ];
+
+  late StreamSubscription navigationListener;
+
+  @override
+  void initState() {
+    super.initState();
+    setTab(NavigationManager.instance.currentRoute?.label);
+    navigationListener = NavigationManager.instance.getCurrentRoute
+        .listen((route) => setTab(route.label));
+  }
+
+  @override
+  void dispose() {
+    navigationListener.cancel();
+    super.dispose();
+  }
+
+  void setTab(String? tab) {
+    if (tab == null) return;
+
+    int tabIndex = pages.indexWhere((element) => element.label == tab);
+    if (tabIndex > -1 && tabIndex <= 1) {
+      selectedIndex = tabIndex;
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (int index) {
+              if (index == 0) {
+                NavigationManager.instance.push(FirstPage.name);
+              } else {
+                NavigationManager.instance.push(SecondPage.name);
+              }
+
+              setState(() {
+                selectedIndex = index;
+              });
+            },
+            labelType: NavigationRailLabelType.all,
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.looks_one_outlined),
+                selectedIcon: Icon(Icons.looks_one_rounded),
+                label: Text('First'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.looks_two_outlined),
+                selectedIcon: Icon(Icons.looks_two_rounded),
+                label: Text('Second'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: AnimatedStack(
+                duration: const Duration(milliseconds: 500),
+                crossFadePosition: 0.3,
+                alignment: Alignment.topCenter,
+                initialAnimation: false,
+                animation: (child, animation) {
+                  return SharedAxisAnimation(
+                      key: child.key,
+                      animation: animation,
+                      transitionType: SharedAxisAnimationType.vertical,
+                      child: child);
+                },
+                children: NavigationManager.instance
+                    .nested(context: context, routes: pages),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Key implementation details
+
+<Steps>
+  <Step title="Define local routes">
+    Create a list of `NavigationData` for the nested pages. These are separate from your app's main routes.
+  </Step>
+  
+  <Step title="Listen to route changes">
+    Subscribe to `NavigationManager.instance.getCurrentRoute` to sync tab selection with URL changes:
+    
+    ```dart
+    navigationListener = NavigationManager.instance.getCurrentRoute
+        .listen((route) => setTab(route.label));
+    ```
+  </Step>
+  
+  <Step title="Use nested() to get widgets">
+    Call `nested()` to get the widgets matching the current route:
+    
+    ```dart
+    children: NavigationManager.instance
+        .nested(context: context, routes: pages),
+    ```
+  </Step>
+  
+  <Step title="Navigate on tab change">
+    Push the new route when tabs are tapped:
+    
+    ```dart
+    onDestinationSelected: (int index) {
+      if (index == 0) {
+        NavigationManager.instance.push(FirstPage.name);
+      } else {
+        NavigationManager.instance.push(SecondPage.name);
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Multi-level nested navigation
+
+You can nest navigators within nested navigators for complex hierarchies:
+
+From `example/lib/main_nested_tabs.dart:202-294`:
+
+```dart
+class _SecondPageState extends State<SecondPage> with TickerProviderStateMixin {
+  List<NavigationData> pages = [
+    NavigationData(
+      label: SecondPage.name,
+      url: '/second',
+      builder: (context, routeData, globalData) =>
+          const NestedFirstPage(key: ValueKey(NestedFirstPage.name)),
+    ),
+    NavigationData(
+        label: NestedSecondPage.name,
+        url: '/second/2',
+        builder: (context, routeData, globalData) =>
+            const NestedSecondPage(key: ValueKey(NestedSecondPage.name))),
+  ];
+  List<Tab> tabs = const [
+    Tab(text: 'Nested First'),
+    Tab(text: 'Nested Second'),
+  ];
+
+  late TabController tabController;
+  late StreamSubscription navigationListener;
+
+  @override
+  void initState() {
+    super.initState();
+    int initialIndex = pages.indexWhere((element) =>
+        element.path == NavigationManager.instance.currentRoute?.path);
+    tabController = TabController(
+      initialIndex: initialIndex,
+      length: tabs.length,
+      vsync: this,
+    );
+    tabController.addListener(tabControllerListener);
+    navigationListener = NavigationManager.instance.getCurrentRoute
+        .listen((route) => setTab(route.label));
+  }
+
+  @override
+  void dispose() {
+    tabController.dispose();
+    navigationListener.cancel();
+    super.dispose();
+  }
+
+  void setTab(String? tab) {
+    if (tab == null) return;
+
+    int tabIndex = pages.indexWhere((element) => element.label == tab);
+    if (tabIndex > -1) {
+      tabController.index = tabIndex;
+      setState(() {});
+    }
+  }
+
+  void tabControllerListener() {
+    NavigationManager.instance.routerDelegate
+        .push(pages[tabController.index].label!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.blueAccent,
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          const Text(
+            'Second Page',
+            style: TextStyle(color: Colors.white),
+          ),
+          TabBar(
+            controller: tabController,
+            tabs: tabs,
+          ),
+          Expanded(
+            child: AnimatedStack(
+              duration: const Duration(milliseconds: 500),
+              crossFadePosition: 0,
+              animation: (child, animation) {
+                return FadeThroughAnimation(
+                    key: child.key, animation: animation, child: child);
+              },
+              alignment: Alignment.topLeft,
+              children: NavigationManager.instance
+                  .nested(context: context, routes: pages),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+The `SecondPage` itself contains nested tabs with their own navigation.
+
+## Custom animations
+
+Wrap the nested widgets with custom animation containers:
+
+```dart
+AnimatedStack(
+  duration: const Duration(milliseconds: 500),
+  crossFadePosition: 0.3,
+  alignment: Alignment.topCenter,
+  initialAnimation: false,
+  animation: (child, animation) {
+    return SharedAxisAnimation(
+        key: child.key,
+        animation: animation,
+        transitionType: SharedAxisAnimationType.vertical,
+        child: child);
+  },
+  children: NavigationManager.instance
+      .nested(context: context, routes: pages),
+)
+```
+
+## URL synchronization
+
+Nested navigation automatically synchronizes with URLs:
+
+- `/` shows the first tab
+- `/second` shows the second tab
+- `/second/2` shows a nested tab within the second tab
+
+The URL updates as users navigate, and deep links work automatically.
+
+## Using TabController
+
+For Material TabBar integration, sync the TabController with navigation:
+
+```dart
+late TabController tabController;
+
+@override
+void initState() {
+  super.initState();
+  int initialIndex = pages.indexWhere((element) =>
+      element.path == NavigationManager.instance.currentRoute?.path);
+  tabController = TabController(
+    initialIndex: initialIndex,
+    length: tabs.length,
+    vsync: this,
+  );
+  tabController.addListener(tabControllerListener);
+  navigationListener = NavigationManager.instance.getCurrentRoute
+      .listen((route) => setTab(route.label));
+}
+
+void setTab(String? tab) {
+  if (tab == null) return;
+
+  int tabIndex = pages.indexWhere((element) => element.label == tab);
+  if (tabIndex > -1) {
+    tabController.index = tabIndex;
+    setState(() {});
+  }
+}
+
+void tabControllerListener() {
+  NavigationManager.instance.routerDelegate
+      .push(pages[tabController.index].label!);
+}
+```
+
+## State preservation
+
+Using the `group` parameter in top-level routes ensures state is preserved across tab switches:
+
+```dart
+NavigationData(
+    label: FirstPage.name,
+    url: '/',
+    builder: (context, routeData, globalData) => const MyHomePage(),
+    group: MyHomePage.name), // Same group for all tabs
+NavigationData(
+    label: SecondPage.name,
+    url: '/second',
+    builder: (context, routeData, globalData) => const MyHomePage(),
+    group: MyHomePage.name), // Same group
+```
+
+## Best practices
+
+<Tip>
+**Use unique keys for nested pages**
+
+Provide a unique `ValueKey` for each nested page to help Flutter identify widgets:
+
+```dart
+NavigationData(
+  label: FirstPage.name,
+  url: '/',
+  builder: (context, routeData, globalData) =>
+      const FirstPage(key: ValueKey(FirstPage.name)),
+)
+```
+</Tip>
+
+<Tip>
+**Cancel listeners in dispose**
+
+Always cancel navigation listeners to avoid memory leaks:
+
+```dart
+@override
+void dispose() {
+  navigationListener.cancel();
+  tabController.dispose();
+  super.dispose();
+}
+```
+</Tip>
+
+<Warning>
+**Avoid deep nesting**
+
+While you can nest navigators multiple levels deep, it can become hard to manage. Try to keep nesting to 2-3 levels maximum.
+</Warning>
+
+## Common use cases
+
+### Bottom navigation
+
+```dart
+BottomNavigationBar(
+  currentIndex: selectedIndex,
+  onTap: (index) {
+    NavigationManager.instance.push(pages[index].label!);
+    setState(() => selectedIndex = index);
+  },
+  items: [
+    BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+    BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+    BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+  ],
+)
+```
+
+### Side navigation rail
+
+From the example:
+
+```dart
+NavigationRail(
+  selectedIndex: selectedIndex,
+  onDestinationSelected: (int index) {
+    NavigationManager.instance.push(pages[index].label!);
+    setState(() => selectedIndex = index);
+  },
+  destinations: [...],
+)
+```
+
+### Tabbed pages
+
+```dart
+TabBar(
+  controller: tabController,
+  tabs: [
+    Tab(text: 'Overview'),
+    Tab(text: 'Details'),
+    Tab(text: 'Reviews'),
+  ],
+)
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="URL aliases" icon="link" href="/guides/url-aliases">
+    Learn about the group parameter for state preservation
+  </Card>
+  <Card title="Custom transitions" icon="sparkles" href="/guides/custom-transitions">
+    Add animations to nested navigation
+  </Card>
+</CardGroup>

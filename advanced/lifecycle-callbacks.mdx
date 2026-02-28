@@ -1,0 +1,308 @@
+---
+title: Lifecycle callbacks
+description: Monitor app lifecycle and navigation state changes with LifecycleObserver and NavigationListenerMixin
+---
+
+NavigationUtils provides two powerful systems for monitoring state changes: `LifecycleObserver` for app lifecycle events and `NavigationListenerMixin` for navigation state changes.
+
+## App lifecycle callbacks
+
+`LifecycleObserver` monitors app lifecycle state changes (resumed, paused, inactive, detached, hidden) and invokes callbacks when these states change.
+
+### LifecycleObserverStateMixin
+
+The easiest way to add lifecycle observation to a StatefulWidget:
+
+```dart
+class _MyHomePageState extends State<MyHomePage> 
+    with LifecycleObserverStateMixin {
+  
+  @override
+  void onPaused() {
+    debugPrint('App paused');
+    // Pause animations, stop timers, save state
+  }
+
+  @override
+  void onResumed() {
+    debugPrint('App resumed');
+    // Resume animations, restart timers
+  }
+
+  @override
+  void onInactive() {
+    debugPrint('App inactive');
+  }
+
+  @override
+  void onDetached() {
+    debugPrint('App detached');
+  }
+
+  @override
+  void onHidden() {
+    debugPrint('App hidden');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home')),
+      body: const Center(child: Text('Hello')),
+    );
+  }
+}
+```
+
+<Note>
+  The mixin automatically initializes the observer in `initState` and disposes it in `dispose`. No manual setup required.
+</Note>
+
+### Available lifecycle states
+
+| State | Description |
+|-------|-------------|
+| `resumed` | App is visible and responding to user input |
+| `paused` | App is not visible to user (backgrounded) |
+| `inactive` | App is in an inactive state (e.g., during a phone call) |
+| `detached` | App is still running but detached from the view hierarchy |
+| `hidden` | App is hidden from the user |
+
+### LifecycleObserverMixin
+
+For classes that aren't widgets, use `LifecycleObserverMixin`:
+
+```dart
+class MyService with LifecycleObserverMixin {
+  MyService() {
+    initLifecycleObserver();
+  }
+
+  @override
+  void onPaused() {
+    // Pause background operations
+  }
+
+  @override
+  void onResumed() {
+    // Resume background operations
+  }
+
+  void dispose() {
+    disposeLifecycleObserver();
+  }
+}
+```
+
+<Warning>
+  Remember to call `initLifecycleObserver()` in your constructor and `disposeLifecycleObserver()` when cleaning up.
+</Warning>
+
+### LifecycleObserverChangeNotifierMixin
+
+For `ChangeNotifier` classes:
+
+```dart
+class AppStateNotifier extends ChangeNotifier 
+    with LifecycleObserverChangeNotifierMixin {
+  
+  AppStateNotifier() {
+    initLifecycleObserverListener();
+  }
+
+  @override
+  void onPaused() {
+    notifyListeners();
+  }
+
+  @override
+  void onResumed() {
+    notifyListeners();
+  }
+  
+  // dispose() is automatically handled by the mixin
+}
+```
+
+## Navigation state callbacks
+
+`NavigationListenerMixin` detects when a page is paused (another page is pushed on top) or resumed (page becomes active again).
+
+### NavigationListenerStateMixin
+
+Monitor when your page is paused or resumed in the navigation stack:
+
+```dart
+class _ProjectPageState extends State<ProjectPage>
+    with NavigationListenerStateMixin {
+  
+  @override
+  void onRoutePause({
+    required String oldRouteName, 
+    required String newRouteName
+  }) {
+    debugPrint('Page paused: $oldRouteName -> $newRouteName');
+    // Pause video playback, stop API calls, etc.
+  }
+
+  @override
+  void onRouteResume() {
+    debugPrint('Page resumed');
+    // Resume video playback, refresh data, etc.
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Project ${widget.id}')),
+      body: const Center(child: Text('Project Page')),
+    );
+  }
+}
+```
+
+### Understanding route pause
+
+The `onRoutePause` callback provides both the old and new route names:
+
+<Steps>
+  <Step title="Navigation forward">
+    When navigating from Page 1 to Page 2:
+    
+    - Page 1 receives `onRoutePause` with `oldRouteName = 'Page 1'` and `newRouteName = 'Page 2'`
+    - Page 2 does not receive a callback (it's being created)
+  </Step>
+
+  <Step title="Navigation backward">
+    When popping Page 2 back to Page 1:
+    
+    - Page 2 receives `onRoutePause` with `oldRouteName = 'Page 2'` and `newRouteName = 'Page 1'`
+    - Page 1 receives `onRouteResume`
+  </Step>
+</Steps>
+
+### Use cases for navigation callbacks
+
+```dart
+class _VideoPlayerPageState extends State<VideoPlayerPage>
+    with NavigationListenerStateMixin {
+  
+  late VideoPlayerController _controller;
+
+  @override
+  void onRoutePause({
+    required String oldRouteName,
+    required String newRouteName
+  }) {
+    // Pause video when user navigates away
+    _controller.pause();
+  }
+
+  @override
+  void onRouteResume() {
+    // Resume video when user comes back
+    _controller.play();
+  }
+}
+```
+
+<Note>
+  Flutter keeps page widgets mounted and preserves their state even when hidden. Use `onRoutePause` to pause expensive operations (animations, timers, API calls) when the page is in the background.
+</Note>
+
+### Detecting page close vs pause
+
+`onRoutePause` is called both when a page is paused AND when it's about to be closed. To differentiate:
+
+```dart
+@override
+void onRoutePause({
+  required String oldRouteName,
+  required String newRouteName
+}) {
+  String routeName = ModalRoute.of(context)?.settings.name ?? '';
+  bool closed = NavigationManager.instance.routerDelegate.routes
+      .contains(DefaultRoute(path: routeName)) == false;
+  
+  if (closed) {
+    debugPrint('Page is being closed');
+  } else {
+    debugPrint('Page is being paused');
+  }
+}
+```
+
+### NavigationListenerMixin
+
+For non-widget classes:
+
+```dart
+class PageController with NavigationListenerMixin {
+  PageController(BuildContext context) {
+    initNavigationListener(context);
+  }
+
+  @override
+  void onRoutePause({
+    required String oldRouteName,
+    required String newRouteName
+  }) {
+    // Handle pause
+  }
+
+  @override
+  void onRouteResume() {
+    // Handle resume
+  }
+
+  void dispose() {
+    mounted = false;
+    disposeNavigationListener();
+  }
+}
+```
+
+## Combining both mixins
+
+You can use both mixins together to monitor both app lifecycle and navigation state:
+
+```dart
+class _MyPageState extends State<MyPage>
+    with NavigationListenerStateMixin, LifecycleObserverStateMixin {
+  
+  // Navigation callbacks
+  @override
+  void onRoutePause({
+    required String oldRouteName,
+    required String newRouteName
+  }) {
+    debugPrint('Route paused: $oldRouteName -> $newRouteName');
+  }
+
+  @override
+  void onRouteResume() {
+    debugPrint('Route resumed');
+  }
+
+  // Lifecycle callbacks
+  @override
+  void onPaused() {
+    debugPrint('App paused');
+  }
+
+  @override
+  void onResumed() {
+    debugPrint('App resumed');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Page')),
+      body: const Center(child: Text('Content')),
+    );
+  }
+}
+```
+
+This gives you complete visibility into both app-level and page-level state changes.

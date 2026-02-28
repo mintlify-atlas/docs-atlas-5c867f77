@@ -1,0 +1,274 @@
+---
+title: Path parameters
+description: Learn how to define and use dynamic path parameters in your routes
+---
+
+Path parameters allow you to capture dynamic segments from URLs. They're perfect for routes like `/project/:id` or `/user/:username` where the value changes but the route structure remains the same.
+
+## Defining path parameters
+
+Path parameters are denoted by a colon (`:`) followed by a parameter name in the URL pattern:
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? ''),
+  ),
+)
+```
+
+From the example app in `example/lib/main.dart:14-16`:
+
+```dart
+NavigationData(
+    label: ProjectPage.name,
+    url: '/project/:id',
+    builder: (context, routeData, globalData) => ProjectPage(
+        id: int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0)),
+```
+
+## Accessing path parameters
+
+Path parameters are available via `routeData.pathParameters` in your builder. They're stored in a `Map<String, String>`:
+
+```dart
+NavigationData(
+  url: '/user/:username/posts/:postId',
+  builder: (context, routeData, globalData) => PostPage(
+    username: routeData.pathParameters['username'] ?? '',
+    postId: int.tryParse(routeData.pathParameters['postId'] ?? '') ?? 0,
+  ),
+)
+```
+
+## Navigating with path parameters
+
+There are two ways to navigate with path parameters:
+
+### Direct path navigation
+
+Include the parameter value directly in the path:
+
+```dart
+NavigationManager.instance.push('/project/320');
+```
+
+From the example app in `example/lib/main.dart:77-79`:
+
+```dart
+MaterialButton(
+  onPressed: () => NavigationManager.instance.push('/project/1'),
+  child: const Text('Open Project Path'),
+),
+```
+
+### Named navigation with pathParameters
+
+Use the `pathParameters` map when navigating by name:
+
+```dart
+NavigationManager.instance.push(
+  ProjectPage.name,
+  pathParameters: {'projectId': '320'},
+);
+```
+
+From the example app in `example/lib/main.dart:81-84`:
+
+```dart
+MaterialButton(
+  onPressed: () => NavigationManager.instance
+      .push(ProjectPage.name, pathParameters: {'id': '2'}),
+  child: const Text('Open Project Named'),
+),
+```
+
+## Multiple path parameters
+
+Define routes with multiple dynamic segments:
+
+```dart
+NavigationData(
+  url: '/company/:companyId/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectDetailsPage(
+    companyId: routeData.pathParameters['companyId'] ?? '',
+    projectId: routeData.pathParameters['projectId'] ?? '',
+  ),
+)
+```
+
+Navigate to it:
+
+```dart
+// Using path
+NavigationManager.instance.push('/company/123/project/456');
+
+// Using pathParameters
+NavigationManager.instance.push(
+  ProjectDetailsPage.name,
+  pathParameters: {
+    'companyId': '123',
+    'projectId': '456',
+  },
+);
+```
+
+## Type conversion
+
+<Note>
+Path parameters are always Strings because they come from URLs. Convert them to the appropriate type in your builder.
+</Note>
+
+### Integers
+
+```dart
+int id = int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0;
+```
+
+### Custom types
+
+Parse path parameters into custom types:
+
+```dart
+enum ProjectType { personal, business, enterprise }
+
+ProjectType? parseProjectType(String? value) {
+  return ProjectType.values.firstWhereOrNull(
+    (type) => type.name == value,
+  );
+}
+
+NavigationData(
+  url: '/project/:type/:id',
+  builder: (context, routeData, globalData) => ProjectPage(
+    type: parseProjectType(routeData.pathParameters['type']),
+    id: int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0,
+  ),
+)
+```
+
+## Path parameter rules
+
+<Warning>
+Be aware of these important rules when working with path parameters:
+</Warning>
+
+### Different URLs require different routes
+
+`/project` and `/project/:projectId` are different URLs and require separate route definitions:
+
+```dart
+// Define both routes
+NavigationData(
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectListPage(),
+),
+NavigationData(
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectDetailsPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? '') ?? 0,
+  ),
+),
+```
+
+### Trailing slashes
+
+A trailing slash like `/project/` is equivalent to `/project`, not `/project/:id`:
+
+```dart
+// These are equivalent
+'/project'
+'/project/'
+
+// This is different
+'/project/:id'
+```
+
+### Parameter names must match
+
+The parameter name in your URL must match the key you use to access it:
+
+```dart
+// ✅ Correct - names match
+NavigationData(
+  url: '/user/:userId',
+  builder: (context, routeData, globalData) => UserPage(
+    id: routeData.pathParameters['userId'], // ✅
+  ),
+)
+
+// ❌ Wrong - names don't match
+NavigationData(
+  url: '/user/:userId',
+  builder: (context, routeData, globalData) => UserPage(
+    id: routeData.pathParameters['id'], // ❌ Returns null
+  ),
+)
+```
+
+## Combining with query parameters
+
+Path parameters and query parameters work together seamlessly:
+
+```dart
+NavigationData(
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? '') ?? 0,
+    tab: routeData.queryParameters['tab'] ?? 'overview',
+  ),
+)
+```
+
+Navigate with both:
+
+```dart
+NavigationManager.instance.push(
+  '/project/320',
+  queryParameters: {'tab': 'settings'},
+);
+```
+
+## Path parameters in deeplinks
+
+Path parameters work with deeplinks and can be remapped:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/link/project/:projectId',
+  destinationUrl: '/project/:projectId',
+  mapArgumentsFunction: (pathParameters, queryParameters) {
+    // Access and transform path parameters
+    String projectId = pathParameters['projectId'] ?? '';
+    return {'id': projectId};
+  },
+)
+```
+
+## Best practices
+
+<Tip>
+Use path parameters for:
+- Required route identifiers (IDs, slugs, usernames)
+- Hierarchical data (company/project, category/product)
+- SEO-friendly URLs on web
+</Tip>
+
+<Tip>
+Use descriptive parameter names:
+- ✅ `'/user/:userId'` is better than `'/user/:id'`
+- ✅ `'/post/:postSlug'` is better than `'/post/:slug'`
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Query parameters" icon="question" href="/guides/query-parameters">
+    Learn about optional URL parameters
+  </Card>
+  <Card title="Deeplinks" icon="link" href="/guides/deeplinks">
+    Handle dynamic deeplink URLs
+  </Card>
+</CardGroup>

@@ -1,0 +1,184 @@
+---
+title: NavigationData
+description: Configuration data for a navigation route
+---
+
+This class defines how a route should be built and displayed, including the URL pattern, page builder, and optional metadata.
+
+## Properties
+
+<ResponseField name="label" type="String?">
+  Optional label for the route, used for named navigation.
+</ResponseField>
+
+<ResponseField name="url" type="String" required>
+  The URL pattern for this route. Must start with '/'. Supports path parameters using ':' syntax, e.g., '/user/:id'.
+</ResponseField>
+
+<ResponseField name="builder" type="NavigationPageFactory" required>
+  Function that builds the widget for this route.
+</ResponseField>
+
+<ResponseField name="pageType" type="PageType?">
+  The type of page transition to use.
+</ResponseField>
+
+<ResponseField name="fullScreenDialog" type="bool?">
+  Whether this route should be displayed as a fullscreen dialog.
+</ResponseField>
+
+<ResponseField name="barrierColor" type="Color?">
+  The barrier color for modal routes.
+</ResponseField>
+
+<ResponseField name="metadata" type="Map<String, dynamic>" default="{}">
+  Optional metadata associated with this route.
+</ResponseField>
+
+<ResponseField name="pageBuilder" type="CustomPageBuilder?">
+  Optional custom page builder for this route. If provided, this takes precedence over the default page building logic.
+</ResponseField>
+
+<ResponseField name="group" type="String?">
+  Routes can be grouped together by setting a common `group` name. By default, Flutter identifies routes with unique URLs as unique pages. Setting a `group` alias overrides the default behavior and identifies those routes as the same page.
+</ResponseField>
+
+<ResponseField name="uri" type="Uri">
+  The parsed URI from `url`.
+</ResponseField>
+
+<ResponseField name="path" type="String">
+  The canonical path from `url`.
+</ResponseField>
+
+<ResponseField name="queryParameters" type="Map<String, String>">
+  The query parameters extracted from `url`.
+</ResponseField>
+
+## Constructor
+
+```dart
+NavigationData({
+  String? label,
+  required String url,
+  required NavigationPageFactory builder,
+  PageType? pageType,
+  bool? fullScreenDialog,
+  Color? barrierColor,
+  Map<String, dynamic> metadata = const {},
+  String? group,
+  CustomPageBuilder? pageBuilder
+})
+```
+
+<ParamField path="label" type="String?">
+  Optional label for named navigation.
+</ParamField>
+
+<ParamField path="url" type="String" required>
+  The URL pattern. Must start with '/'.
+</ParamField>
+
+<ParamField path="builder" type="NavigationPageFactory" required>
+  Function that builds the widget for this route.
+</ParamField>
+
+<ParamField path="pageType" type="PageType?">
+  The type of page transition to use.
+</ParamField>
+
+<ParamField path="fullScreenDialog" type="bool?">
+  Whether to display as a fullscreen dialog.
+</ParamField>
+
+<ParamField path="barrierColor" type="Color?">
+  The barrier color for modal routes.
+</ParamField>
+
+<ParamField path="metadata" type="Map<String, dynamic>" default="{}">
+  Optional metadata.
+</ParamField>
+
+<ParamField path="group" type="String?">
+  Optional group name for grouping related routes.
+</ParamField>
+
+<ParamField path="pageBuilder" type="CustomPageBuilder?">
+  Optional custom page builder.
+</ParamField>
+
+## Type definitions
+
+### NavigationPageFactory
+
+```dart
+typedef NavigationPageFactory = Widget Function(
+  BuildContext context,
+  DefaultRoute routeData,
+  Map<String, dynamic> globalData
+)
+```
+
+Function type for building navigation pages. This function is called to build the widget for a given route.
+
+### CustomPageBuilder
+
+```dart
+typedef CustomPageBuilder = Page Function(
+  ValueKey<String>? key,
+  String? name,
+  Widget child,
+  DefaultRoute routeData,
+  Map<String, dynamic> globalData,
+  Object? arguments
+)
+```
+
+Function type for custom page building. Allows custom creation of Page objects with full control over the page configuration.
+
+### OnUnknownRoute
+
+```dart
+typedef OnUnknownRoute = Page Function(DefaultRoute route)
+```
+
+Function type for handling unknown routes. Called when a route is not found in the navigation routes. Should return a Page to display for the unknown route.
+
+## Enums
+
+### PageType
+
+Types of page transitions available for navigation.
+
+- `material` - Material Design page transition (default)
+- `transparent` - Transparent page transition (allows underlying page to show through)
+- `cupertino` - Cupertino (iOS-style) page transition
+
+## Example
+
+```dart
+NavigationData(
+  label: 'home',
+  url: '/home',
+  builder: (context, routeData, globalData) => HomePage(),
+  pageType: PageType.material,
+)
+
+// With path parameters
+NavigationData(
+  label: 'user-detail',
+  url: '/user/:id',
+  builder: (context, routeData, globalData) {
+    final userId = routeData.pathParameters['id'];
+    return UserDetailPage(userId: userId);
+  },
+)
+
+// With group for tabbed navigation
+NavigationData(
+  label: 'games',
+  url: '/games',
+  builder: (context, routeData, globalData) => HomePage(tab: 'games'),
+  group: 'home',
+)
+```

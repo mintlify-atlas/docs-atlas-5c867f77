@@ -1,0 +1,121 @@
+---
+title: Introduction
+description: The missing navigation library for Flutter's Navigator 2
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="NavigationUtils Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="NavigationUtils Hero Dark"
+/>
+
+## The missing navigation library for Flutter's Navigator 2
+
+NavigationUtils makes it easy to implement Navigator 2 in your Flutter app. It reimplements the familiar Navigator 1 API with `push()`, `pop()`, and `pushReplacement()` while giving you the full power and flexibility of Navigator 2.
+
+<CardGroup cols={2}>
+  <Card
+    title="Navigator 1 API"
+    icon="route"
+    iconType="duotone"
+  >
+    Familiar methods like `push()`, `pop()`, `pushReplacement()` work exactly as expected
+  </Card>
+  <Card
+    title="Full backstack control"
+    icon="layer-group"
+    iconType="duotone"
+  >
+    Complete control over the navigation stack through `set()`, `setBackstack()`, and advanced methods
+  </Card>
+  <Card
+    title="Named routes"
+    icon="tag"
+    iconType="duotone"
+  >
+    Navigator 2 doesn't support named routes - NavigationUtils brings them back with `pushNamed()`
+  </Card>
+  <Card
+    title="URL routing"
+    icon="link"
+    iconType="duotone"
+  >
+    Path-based routing with query parameters, path parameters, and deeplink support
+  </Card>
+</CardGroup>
+
+## Why NavigationUtils?
+
+Flutter's Navigator 2 is powerful but complex. NavigationUtils bridges the gap between the simplicity of Navigator 1 and the capabilities of Navigator 2.
+
+### Key features
+
+**Simplified Navigator 2**  
+Navigator 2 requires extensive boilerplate code and understanding of `RouterDelegate` and `RouteInformationParser`. NavigationUtils provides default implementations so you can get started in minutes.
+
+**Query and path parameters**  
+Navigator 2 doesn't support query or path parameters out of the box. NavigationUtils adds first-class support:
+
+```dart
+// Path parameters
+NavigationData(
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? ''),
+  ),
+)
+
+// Query parameters
+NavigationManager.instance.push('/product', queryParameters: {'id': '320'});
+```
+
+**Advanced deeplink handling**  
+Define all your deeplinks in a single list with support for backstack customization, authentication guards, and custom redirect logic.
+
+**Performance optimized**  
+Intelligent page caching prevents unnecessary rebuilds. Unlike other Navigator 2 libraries, NavigationUtils doesn't rebuild all pages on every navigation event.
+
+## Use cases
+
+NavigationUtils is used in production by apps with 10,000+ users, including [Codelessly](https://codelessly.com) - a Flutter app and website builder.
+
+Perfect for:
+- Apps migrating from Navigator 1 to Navigator 2
+- Web apps that need proper URL routing
+- Apps with complex authentication flows
+- Apps requiring deeplink handling
+- Multi-platform apps (mobile, web, desktop)
+
+## Getting started
+
+Ready to add NavigationUtils to your app?
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Add NavigationUtils to your Flutter project
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="bolt"
+    href="/quickstart"
+  >
+    Get up and running in 5 lines of code
+  </Card>
+</CardGroup>
+
+## Community and support
+
+NavigationUtils is open source and actively maintained.
+
+- **GitHub**: [rayliverified/NavigationUtils](https://github.com/rayliverified/NavigationUtils)
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/rayliverified/NavigationUtils/issues)
+- **License**: BSD 0-Clause (public domain equivalent)

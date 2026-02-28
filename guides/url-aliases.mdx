@@ -1,0 +1,312 @@
+---
+title: URL aliases
+description: Map multiple URLs to the same page using the group parameter
+---
+
+Sometimes you need different URLs to display the same page. NavigationUtils provides the `group` parameter to map multiple routes to a single page instance, which is perfect for single-page apps with multiple entry points.
+
+## Why URL aliases
+
+Flutter's Navigator 2 enforces a 1-to-1 mapping between URLs and routes. But sometimes you need:
+
+- Different URLs for the same page (e.g., `/`, `/community`, `/news` all show the home page)
+- Tab-based navigation where each tab has its own URL
+- Auth flows where login and signup share the same page layout
+
+The `group` parameter solves this by allowing multiple routes to share the same widget instance.
+
+## Basic usage
+
+Define multiple routes with the same `group` value:
+
+```dart
+NavigationData(
+  label: HomePage.name,
+  url: '/',
+  builder: (context, routeData, globalData) =>
+      HomePage(tab: routeData.queryParameters['tab'] ?? CommunityPage.name),
+  group: HomePage.name,
+),
+NavigationData(
+  label: CommunityPage.name,
+  url: '/community',
+  builder: (context, routeData, globalData) =>
+      HomePage(tab: CommunityPage.name),
+  group: HomePage.name,
+),
+NavigationData(
+  label: NewsPage.name,
+  url: '/news',
+  builder: (context, routeData, globalData) =>
+      HomePage(tab: NewsPage.name),
+  group: HomePage.name,
+),
+```
+
+Now `/`, `/community`, and `/news` all navigate to `HomePage` while maintaining their distinct URLs.
+
+## Widget reuse and performance
+
+Routes with the same `group` share the same widget instance. This provides significant benefits:
+
+- **Preserves widget state** - The widget's state is maintained across navigation
+- **Avoids rebuild overhead** - Only `didUpdateWidget` is called instead of `initState`
+- **Smooth animations** - Transitions between grouped routes are seamless
+
+<Tip>
+Grouped routes reuse the widget instead of recreating it, which is ideal for preserving expensive state like scroll positions, form data, or animation controllers.
+</Tip>
+
+## Authentication pages example
+
+Share a common auth page layout between login and signup:
+
+From `example_auth/lib/navigation_routes.dart:14-26`:
+
+```dart
+NavigationData(
+    label: LoginForm.name,
+    url: '/login',
+    group: 'auth',
+    builder: (context, routeData, globalData) =>
+        AuthPage(type: AuthPageType.login),
+    metadata: {'type': 'auth'}),
+NavigationData(
+    label: SignUpForm.name,
+    url: '/signup',
+    group: 'auth',
+    builder: (context, routeData, globalData) =>
+        AuthPage(type: AuthPageType.signup),
+    metadata: {'type': 'auth'}),
+```
+
+Both `/login` and `/signup` display `AuthPage` with different types, but the widget instance is reused.
+
+## Important: Avoid const constructors
+
+<Warning>
+**Do NOT use `const` constructors with grouped routes.** The `const` keyword prevents Flutter from detecting widget parameter changes.
+</Warning>
+
+```dart
+// ❌ Wrong - const prevents widget updates
+builder: (context, routeData, globalData) =>
+    const AuthPage(type: AuthPageType.login),
+
+// ✅ Correct - allows widget to detect parameter changes
+builder: (context, routeData, globalData) =>
+    AuthPage(type: AuthPageType.login),
+```
+
+When using grouped routes, Flutter needs to detect that parameters changed to call `didUpdateWidget`. The `const` keyword tells Flutter the widget is immutable, preventing updates.
+
+## Implementing didUpdateWidget
+
+Override `didUpdateWidget` in your StatefulWidget to handle parameter changes:
+
+```dart
+class AuthPage extends StatefulWidget {
+  final AuthPageType type;
+  
+  const AuthPage({super.key, required this.type});
+  
+  @override
+  State<AuthPage> createState() => _AuthPageState();
+}
+
+class _AuthPageState extends State<AuthPage> {
+  @override
+  void didUpdateWidget(AuthPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.type != widget.type) {
+      setState(() {
+        // Update state when type changes
+      });
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    // Build UI based on widget.type
+    return widget.type == AuthPageType.login
+        ? LoginForm()
+        : SignUpForm();
+  }
+}
+```
+
+## How it works internally
+
+Flutter's Navigator 2 uses `Page.canUpdate` to determine whether to update or recreate a route:
+
+1. **canUpdate returns true** - The route is reused and the widget receives `didUpdateWidget`
+2. **canUpdate returns false** - A new route is created, calling `initState`
+
+For grouped routes:
+- All routes in the same group share the same Page key (the group name)
+- When navigating between grouped routes, `canUpdate` returns true
+- The route reads the new child widget at build time
+- Flutter detects the child changed and calls `didUpdateWidget`
+
+<Note>
+For detailed technical documentation, see the [Flutter Navigator 2 Page Update Mechanism](https://github.com/rayliverified/NavigationUtils/blob/master/docs/FLUTTER_NAVIGATOR2_PAGE_UPDATE_MECHANISM.md) documentation.
+</Note>
+
+## Use cases
+
+### Tab-based navigation
+
+```dart
+NavigationData(
+  url: '/home',
+  builder: (context, routeData, globalData) =>
+      TabsPage(selectedTab: 0),
+  group: 'tabs',
+),
+NavigationData(
+  url: '/explore',
+  builder: (context, routeData, globalData) =>
+      TabsPage(selectedTab: 1),
+  group: 'tabs',
+),
+NavigationData(
+  url: '/profile',
+  builder: (context, routeData, globalData) =>
+      TabsPage(selectedTab: 2),
+  group: 'tabs',
+),
+```
+
+### Multi-step forms
+
+```dart
+NavigationData(
+  url: '/checkout/step1',
+  builder: (context, routeData, globalData) =>
+      CheckoutPage(step: 1),
+  group: 'checkout',
+),
+NavigationData(
+  url: '/checkout/step2',
+  builder: (context, routeData, globalData) =>
+      CheckoutPage(step: 2),
+  group: 'checkout',
+),
+NavigationData(
+  url: '/checkout/step3',
+  builder: (context, routeData, globalData) =>
+      CheckoutPage(step: 3),
+  group: 'checkout',
+),
+```
+
+### Settings with query parameters
+
+```dart
+NavigationData(
+  url: '/settings',
+  builder: (context, routeData, globalData) =>
+      SettingsPage(
+        section: routeData.queryParameters['section'] ?? 'general',
+      ),
+  group: 'settings',
+),
+```
+
+Navigate with different sections:
+
+```dart
+NavigationManager.instance.push('/settings', queryParameters: {'section': 'privacy'});
+NavigationManager.instance.push('/settings', queryParameters: {'section': 'notifications'});
+```
+
+The same `SettingsPage` instance updates to show different sections.
+
+## Best practices
+
+<Tip>
+**Use descriptive group names**
+
+```dart
+// ✅ Good - clear purpose
+group: 'auth'
+group: 'onboarding'
+group: 'checkout-flow'
+
+// ❌ Avoid - unclear
+group: 'group1'
+group: 'pages'
+```
+</Tip>
+
+<Tip>
+**Group routes that share:**
+- The same widget type
+- Similar UI layout
+- Common state that should be preserved
+- Related functionality
+</Tip>
+
+<Warning>
+**Don't group unrelated routes**
+
+Only group routes that truly represent the same page with different parameters or states. Grouping unrelated pages can cause confusion and unexpected behavior.
+</Warning>
+
+## Common patterns
+
+### Home page with tabs via query parameters
+
+```dart
+NavigationData(
+  label: HomePage.name,
+  url: '/',
+  builder: (context, routeData, globalData) =>
+      HomePage(tab: routeData.queryParameters['tab'] ?? 'community'),
+  group: HomePage.name,
+),
+```
+
+Navigate to different tabs:
+
+```dart
+NavigationManager.instance.push('/', queryParameters: {'tab': 'community'});
+NavigationManager.instance.push('/', queryParameters: {'tab': 'messages'});
+NavigationManager.instance.push('/', queryParameters: {'tab': 'profile'});
+```
+
+### Separate URLs for each tab
+
+```dart
+NavigationData(
+  label: HomePage.name,
+  url: '/',
+  builder: (context, routeData, globalData) => HomePage(tab: 'community'),
+  group: HomePage.name,
+),
+NavigationData(
+  label: MessagesPage.name,
+  url: '/messages',
+  builder: (context, routeData, globalData) => HomePage(tab: 'messages'),
+  group: HomePage.name,
+),
+NavigationData(
+  label: ProfilePage.name,
+  url: '/profile',
+  builder: (context, routeData, globalData) => HomePage(tab: 'profile'),
+  group: HomePage.name,
+),
+```
+
+Each tab has its own URL, but they all share the same `HomePage` instance.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Nested navigation" icon="layer-group" href="/guides/nested-navigation">
+    Learn about nested navigators for complex layouts
+  </Card>
+  <Card title="Query parameters" icon="question" href="/guides/query-parameters">
+    Use query parameters with grouped routes
+  </Card>
+</CardGroup>

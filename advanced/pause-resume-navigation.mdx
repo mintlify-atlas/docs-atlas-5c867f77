@@ -1,0 +1,317 @@
+---
+title: Pause and resume navigation
+description: Defer navigation with loading screens using pauseNavigation() and resumeNavigation()
+---
+
+NavigationUtils allows you to pause and defer navigation until asynchronous operations complete. This is essential for scenarios like authentication checks, data loading, or initialization that must complete before the app can navigate.
+
+## Why pause navigation?
+
+When your app starts, you often need to:
+
+- Check authentication status
+- Load user preferences
+- Initialize services
+- Fetch configuration data
+
+Without pausing navigation, the app might try to navigate before these operations complete, leading to incorrect routing or errors.
+
+## Basic usage
+
+<Steps>
+  <Step title="Pause navigation before runApp">
+    Call `pauseNavigation()` before running your app:
+
+    ```dart
+    void main() {
+      WidgetsFlutterBinding.ensureInitialized();
+      
+      NavigationManager.init(
+        mainRouterDelegate: DefaultRouterDelegate(
+          navigationDataRoutes: routes,
+          debugLog: true
+        ),
+        routeInformationParser: DefaultRouteInformationParser(debugLog: true)
+      );
+      
+      // Pause navigation until auth check completes
+      NavigationManager.instance.pauseNavigation();
+      
+      runApp(const MyApp());
+    }
+    ```
+  </Step>
+
+  <Step title="Perform async operations">
+    Complete your initialization work:
+
+    ```dart
+    class _MyAppState extends State<MyApp> {
+      @override
+      void initState() {
+        super.initState();
+        
+        // Mock authentication delay
+        Future.delayed(const Duration(milliseconds: 5000)).then((value) {
+          NavigationManager.instance.resumeNavigation();
+        });
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Resume navigation">
+    Call `resumeNavigation()` when ready:
+
+    ```dart
+    NavigationManager.instance.resumeNavigation();
+    ```
+  </Step>
+</Steps>
+
+## Complete example
+
+Here's a full example from `/home/daytona/workspace/source/example/lib/main_auth_delay.dart:1`:
+
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+  NavigationManager.init(
+    mainRouterDelegate:
+      DefaultRouterDelegate(navigationDataRoutes: routes, debugLog: true),
+    routeInformationParser: DefaultRouteInformationParser(debugLog: true)
+  );
+  NavigationManager.instance.pauseNavigation();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Mock Auth delay.
+    Future.delayed(const Duration(milliseconds: 5000)).then((value) {
+      NavigationManager.instance.resumeNavigation();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+## Default loading screen
+
+By default, `pauseNavigation()` displays a loading screen with a `CupertinoActivityIndicator`:
+
+```dart
+NavigationManager.instance.pauseNavigation();
+```
+
+This shows:
+- A blank scaffold
+- A centered loading indicator
+- No navigation is possible until resumed
+
+## Custom loading screen
+
+Provide your own loading page with the `pageBuilder` parameter:
+
+```dart
+NavigationManager.instance.pauseNavigation(
+  pageBuilder: (name) => MaterialPage(
+    name: name,
+    child: Scaffold(
+      backgroundColor: Colors.blue,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/logo.png'),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 16),
+            const Text(
+              'Loading...',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
+```
+
+## Real-world authentication example
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(
+      navigationDataRoutes: routes
+    ),
+    routeInformationParser: DefaultRouteInformationParser()
+  );
+  
+  // Pause until auth check completes
+  NavigationManager.instance.pauseNavigation(
+    pageBuilder: (name) => MaterialPage(
+      name: name,
+      child: const SplashScreen(),
+    ),
+  );
+  
+  runApp(const MyApp());
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Check authentication
+    bool isAuthenticated = await AuthService.instance.checkAuth();
+    
+    // Load user preferences
+    await PreferencesService.instance.load();
+    
+    // Initialize analytics
+    await AnalyticsService.instance.init();
+    
+    // Navigate to appropriate initial screen
+    if (isAuthenticated) {
+      NavigationManager.instance.set(['/home']);
+    } else {
+      NavigationManager.instance.set(['/login']);
+    }
+    
+    // Resume navigation
+    NavigationManager.instance.resumeNavigation();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'My App',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+## How it works
+
+<Note>
+  `pauseNavigation()` uses `setOverride()` under the hood, which preserves the URL and removes all existing pages. The loading screen is displayed instead of the normal navigation stack.
+</Note>
+
+When you call `pauseNavigation()`:
+
+1. The current navigation stack is overridden
+2. Only the loading page is displayed
+3. The URL is preserved (important for deep links)
+4. No navigation can occur
+
+When you call `resumeNavigation()`:
+
+1. The override is removed
+2. Normal navigation resumes
+3. The app navigates to the appropriate route
+
+## Best practices
+
+<Steps>
+  <Step title="Pause before runApp">
+    Always call `pauseNavigation()` before `runApp()` to ensure the loading screen appears immediately.
+  </Step>
+
+  <Step title="Set navigation stack before resuming">
+    Use `NavigationManager.instance.set()` to configure the initial navigation stack based on your app state before calling `resumeNavigation()`.
+  </Step>
+
+  <Step title="Handle errors">
+    Catch errors in your async operations to ensure `resumeNavigation()` is always called:
+
+    ```dart
+    try {
+      await AuthService.instance.checkAuth();
+    } catch (e) {
+      debugPrint('Auth error: $e');
+      NavigationManager.instance.set(['/error']);
+    } finally {
+      NavigationManager.instance.resumeNavigation();
+    }
+    ```
+  </Step>
+
+  <Step title="Provide visual feedback">
+    Use a custom loading screen that matches your app's branding and provides appropriate feedback to users.
+  </Step>
+</Steps>
+
+## Common patterns
+
+### Progressive initialization
+
+```dart
+Future<void> _initializeApp() async {
+  // Quick local checks first
+  final hasToken = await SecureStorage.instance.hasToken();
+  
+  if (!hasToken) {
+    NavigationManager.instance.set(['/login']);
+    NavigationManager.instance.resumeNavigation();
+    return;
+  }
+  
+  // Slower network checks after
+  try {
+    final user = await AuthService.instance.validateToken();
+    NavigationManager.instance.set(['/home']);
+  } catch (e) {
+    NavigationManager.instance.set(['/login']);
+  }
+  
+  NavigationManager.instance.resumeNavigation();
+}
+```
+
+### Timeout handling
+
+```dart
+Future<void> _initializeApp() async {
+  try {
+    await Future.any([
+      _loadUserData(),
+      Future.delayed(const Duration(seconds: 10)),
+    ]);
+  } catch (e) {
+    debugPrint('Initialization timeout or error');
+  } finally {
+    NavigationManager.instance.resumeNavigation();
+  }
+}
+```

@@ -1,0 +1,205 @@
+---
+title: Deeplink functions
+description: NavigationUtils deeplink handling functions
+---
+
+Utility functions for working with deeplinks in NavigationUtils.
+
+## Functions
+
+### openDeeplinkDestination
+
+```dart
+static bool openDeeplinkDestination({
+  required Uri? uri,
+  required List<DeeplinkDestination> deeplinkDestinations,
+  required BaseRouterDelegate routerDelegate,
+  DeeplinkDestination? deeplinkDestination,
+  bool authenticated = true,
+  DefaultRoute? currentRoute,
+  List<String> excludeDeeplinkNavigationPages = const [],
+  bool push = false
+})
+```
+
+Opens a deeplink destination if conditions are met. This function is responsible for determining if a DeeplinkDestination can be opened (using the `canOpenDeeplinkDestination` function) and if so, it performs the necessary navigation.
+
+<ParamField path="uri" type="Uri?" required>
+  The URI for the deeplink.
+</ParamField>
+
+<ParamField path="deeplinkDestinations" type="List<DeeplinkDestination>" required>
+  List of all available DeeplinkDestination instances.
+</ParamField>
+
+<ParamField path="routerDelegate" type="BaseRouterDelegate" required>
+  The router delegate currently handling app navigation.
+</ParamField>
+
+<ParamField path="deeplinkDestination" type="DeeplinkDestination?">
+  The DeeplinkDestination object to be opened.
+</ParamField>
+
+<ParamField path="authenticated" type="bool" default="true">
+  Whether the user is authenticated.
+</ParamField>
+
+<ParamField path="currentRoute" type="DefaultRoute?">
+  The currently active route.
+</ParamField>
+
+<ParamField path="excludeDeeplinkNavigationPages" type="List<String>" default="[]">
+  List of routes from which deeplink navigation is not permitted.
+</ParamField>
+
+<ParamField path="push" type="bool" default="false">
+  If true, the destination is pushed onto the navigation stack.
+</ParamField>
+
+Returns true if the deeplink was successfully opened, false otherwise.
+
+### canOpenDeeplinkDestination
+
+```dart
+static bool canOpenDeeplinkDestination({
+  required Uri? uri,
+  required List<DeeplinkDestination> deeplinkDestinations,
+  required BaseRouterDelegate routerDelegate,
+  DeeplinkDestination? deeplinkDestination,
+  Map<String, String> pathParameters = const {},
+  bool authenticated = true,
+  DefaultRoute? currentRoute,
+  List<String> excludeDeeplinkNavigationPages = const []
+})
+```
+
+Determines whether a DeeplinkDestination can be opened. The method checks various conditions, like whether the URI is null, authentication is needed, whether navigation from the current page is allowed, etc., and returns true if the DeeplinkDestination can be opened.
+
+<ParamField path="uri" type="Uri?" required>
+  The URI for the deeplink.
+</ParamField>
+
+<ParamField path="deeplinkDestinations" type="List<DeeplinkDestination>" required>
+  List of all available DeeplinkDestination instances.
+</ParamField>
+
+<ParamField path="routerDelegate" type="BaseRouterDelegate" required>
+  The router delegate currently managing app navigation.
+</ParamField>
+
+<ParamField path="deeplinkDestination" type="DeeplinkDestination?">
+  The specific destination to be checked.
+</ParamField>
+
+<ParamField path="pathParameters" type="Map<String, String>" default="{}">
+  Path parameters for the destination.
+</ParamField>
+
+<ParamField path="authenticated" type="bool" default="true">
+  Whether the user is authenticated.
+</ParamField>
+
+<ParamField path="currentRoute" type="DefaultRoute?">
+  The currently active route.
+</ParamField>
+
+<ParamField path="excludeDeeplinkNavigationPages" type="List<String>" default="[]">
+  List of routes from which deeplink navigation is not allowed.
+</ParamField>
+
+Returns true if the deeplink can be opened, false otherwise.
+
+### getDeeplinkDestinationFromUri
+
+```dart
+static DeeplinkDestination? getDeeplinkDestinationFromUri(
+  List<DeeplinkDestination> deeplinkDestinations,
+  Uri? uri
+)
+```
+
+Gets the DeeplinkDestination from a URI. The function first attempts to find a direct path match. If no match is found, it then attempts to match the path pattern.
+
+<ParamField path="deeplinkDestinations" type="List<DeeplinkDestination>" required>
+  List of available deeplink destinations.
+</ParamField>
+
+<ParamField path="uri" type="Uri?" required>
+  The URI to match.
+</ParamField>
+
+Returns the matching DeeplinkDestination or null if no match is found.
+
+### getDeeplinkDestinationFromUrl
+
+```dart
+static DeeplinkDestination? getDeeplinkDestinationFromUrl(
+  List<DeeplinkDestination> deeplinkDestinations,
+  String? url
+)
+```
+
+Gets the DeeplinkDestination from a URL string.
+
+<ParamField path="deeplinkDestinations" type="List<DeeplinkDestination>" required>
+  List of available deeplink destinations.
+</ParamField>
+
+<ParamField path="url" type="String?" required>
+  The URL to match.
+</ParamField>
+
+Returns the matching DeeplinkDestination or null if no match is found.
+
+## Example
+
+```dart
+// Define deeplink destinations
+final deeplinkDestinations = [
+  DeeplinkDestination(
+    deeplinkUrl: '/product/:id',
+    destinationLabel: 'product-detail',
+    authenticationRequired: false,
+  ),
+  DeeplinkDestination(
+    deeplinkUrl: '/account/settings',
+    destinationLabel: 'settings',
+    authenticationRequired: true,
+  ),
+];
+
+// Open a deeplink
+final uri = Uri.parse('myapp://product/123');
+final success = NavigationUtils.openDeeplinkDestination(
+  uri: uri,
+  deeplinkDestinations: deeplinkDestinations,
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  authenticated: true,
+);
+
+if (success) {
+  print('Deeplink opened successfully');
+}
+
+// Check if a deeplink can be opened
+final canOpen = NavigationUtils.canOpenDeeplinkDestination(
+  uri: uri,
+  deeplinkDestinations: deeplinkDestinations,
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  authenticated: false,
+);
+
+if (!canOpen) {
+  print('Deeplink requires authentication');
+}
+
+// Get deeplink destination from URI
+final destination = NavigationUtils.getDeeplinkDestinationFromUri(
+  deeplinkDestinations,
+  uri,
+);
+
+if (destination != null) {
+  print('Found destination: ${destination.destinationLabel}');
+}
+```

@@ -1,0 +1,422 @@
+---
+title: Routing parameters
+description: Learn how to use query parameters and path parameters in NavigationUtils
+---
+
+NavigationUtils extends Navigator 2 with full support for query parameters and path parameters. This guide explains how to define, pass, and access routing parameters in your application.
+
+## Overview
+
+Navigator 2 does not support query parameters or path parameters out of the box. NavigationUtils adds this functionality by extending `PageRoute` with `DefaultRoute` and building an abstraction layer through `NavigationData`.
+
+<Note>
+All URL parameters are passed as Strings because URLs are not "typed" by default.
+
+- Extract `ints` and `doubles` with `int.tryParse()` and `double.tryParse()`
+- Extract `bools` by comparing strings: `routeData.queryParameters['flag'] == 'true'`
+</Note>
+
+## Query parameters
+
+Query parameters are key-value pairs appended to the URL after a `?` symbol. They're ideal for optional data, filters, search queries, and pagination.
+
+### Defining routes with query parameters
+
+Access query parameters via `routeData.queryParameters` in your `NavigationData` builder:
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  ),
+)
+```
+
+### Navigating with query parameters
+
+```dart
+// Using named route
+NavigationManager.instance.push(
+  ProjectPage.name,
+  queryParameters: {'id': '320'},
+);
+
+// Using path route
+NavigationManager.instance.push(
+  '/project',
+  queryParameters: {'id': '320'},
+);
+
+// Direct URL navigation
+NavigationManager.instance.push('/project?id=320');
+```
+
+### Multiple query parameters
+
+```dart
+NavigationData(
+  url: '/products',
+  builder: (context, routeData, globalData) => ProductsPage(
+    category: routeData.queryParameters['category'],
+    sort: routeData.queryParameters['sort'] ?? 'recent',
+    page: int.tryParse(routeData.queryParameters['page'] ?? '1') ?? 1,
+  ),
+)
+```
+
+**Navigation:**
+
+```dart
+NavigationManager.instance.push(
+  '/products',
+  queryParameters: {
+    'category': 'electronics',
+    'sort': 'price',
+    'page': '2',
+  },
+);
+```
+
+### Updating query parameters
+
+Update query parameters without navigating to a new page:
+
+```dart
+NavigationManager.instance.setQueryParameters({
+  'filter': 'active',
+  'sort': 'recent',
+});
+```
+
+<Note>
+Query parameters are extracted from URLs and stored separately in NavigationUtils. This ensures that routes with different query parameters are treated as the same page, with parameters passed to that page.
+</Note>
+
+## Path parameters
+
+Path parameters are dynamic segments within the URL path, denoted by a colon (`:`) prefix. They're ideal for required identifiers and hierarchical data.
+
+### Defining routes with path parameters
+
+Define path parameters in the `url` property using `:parameterName` syntax:
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? ''),
+  ),
+)
+```
+
+### Navigating with path parameters
+
+```dart
+// Using named route with path parameters
+NavigationManager.instance.push(
+  ProjectPage.name,
+  pathParameters: {'projectId': '320'},
+);
+
+// Direct URL navigation
+NavigationManager.instance.push('/project/320');
+```
+
+### Multiple path parameters
+
+```dart
+NavigationData(
+  label: PostPage.name,
+  url: '/user/:userId/posts/:postId',
+  builder: (context, routeData, globalData) => PostPage(
+    userId: routeData.pathParameters['userId'] ?? '',
+    postId: routeData.pathParameters['postId'] ?? '',
+  ),
+)
+```
+
+**Navigation:**
+
+```dart
+// Using path parameters map
+NavigationManager.instance.push(
+  PostPage.name,
+  pathParameters: {
+    'userId': '42',
+    'postId': '128',
+  },
+);
+
+// Direct URL navigation
+NavigationManager.instance.push('/user/42/posts/128');
+```
+
+### Path parameter considerations
+
+<Warning>
+`/project` and `/project/:projectId` are different URLs. To support both patterns, define separate `NavigationData` instances:
+
+```dart
+NavigationData(
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectListPage(),
+),
+NavigationData(
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? ''),
+  ),
+)
+```
+</Warning>
+
+<Note>
+A trailing slash like `/project/` does not pass a null ID to `/project/:projectId`. Instead, `/project/` is equivalent to `/project`.
+</Note>
+
+## Combining query and path parameters
+
+You can use both types of parameters together:
+
+```dart
+NavigationData(
+  url: '/article/:articleId',
+  builder: (context, routeData, globalData) => ArticlePage(
+    id: routeData.pathParameters['articleId'] ?? '',
+    referrer: routeData.queryParameters['ref'],
+    highlight: routeData.queryParameters['highlight'],
+  ),
+)
+```
+
+**Navigation:**
+
+```dart
+// Using parameters map
+NavigationManager.instance.push(
+  '/article/:articleId',
+  pathParameters: {'articleId': '123'},
+  queryParameters: {'ref': 'twitter', 'highlight': 'intro'},
+);
+
+// Direct URL
+NavigationManager.instance.push('/article/123?ref=twitter&highlight=intro');
+```
+
+## Real-world examples
+
+### Deeplinks with parameters
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  ),
+)
+```
+
+**Use cases:**
+```dart
+// From email link
+push('/project?id=1');
+
+// From social media share
+push('/project?id=2');
+```
+
+### Search with filters
+
+```dart
+NavigationData(
+  url: '/search',
+  builder: (context, routeData, globalData) => SearchPage(
+    query: routeData.queryParameters['q'] ?? '',
+    filters: routeData.queryParameters['filters'],
+  ),
+)
+```
+
+**Navigation:**
+```dart
+push('/search?q=flutter');
+push('/search?q=dart&filters=recent');
+```
+
+### Pagination
+
+```dart
+NavigationData(
+  url: '/list',
+  builder: (context, routeData, globalData) => ListPage(
+    page: int.tryParse(routeData.queryParameters['page'] ?? '1') ?? 1,
+  ),
+)
+```
+
+**Navigation:**
+```dart
+push('/list?page=1');
+push('/list?page=2');
+```
+
+### Product catalog with filtering
+
+```dart
+NavigationData(
+  url: '/products',
+  builder: (context, routeData, globalData) => ProductsPage(
+    category: routeData.queryParameters['category'],
+  ),
+)
+```
+
+**Navigation:**
+```dart
+push('/products');
+push('/products?category=electronics');
+```
+
+## Implementation details
+
+### How query parameters work
+
+Navigator 2 treats the entire URL (including query parameters) as a unique page identifier. This means:
+
+```
+/
+/?tab=community_page
+/?tab=community_page&post=80
+/?tab=message_page
+/?referrer=google_ads
+```
+
+Would all be treated as different pages by default.
+
+NavigationUtils solves this by:
+
+1. Extracting query parameters from the URL
+2. Storing them in the `DefaultRoute` object
+3. Passing only the base path to Navigator 2
+4. Rebundling parameters during route construction
+
+This ensures all variations of the same path are treated as the same page, with query parameters passed as data.
+
+### Path parameter matching
+
+Path parameters use pattern matching to extract values:
+
+```dart
+// Pattern: '/project/:projectId'
+// URL: '/project/320'
+// Result: pathParameters = {'projectId': '320'}
+```
+
+The matching algorithm:
+
+1. Splits the URL pattern by `/`
+2. Identifies segments starting with `:`
+3. Extracts corresponding values from the actual URL
+4. Stores them in a `Map<String, String>`
+
+## Passing non-serializable data
+
+For complex objects that can't be serialized into URLs, use `globalData`:
+
+```dart
+// Route Definition
+NavigationData(
+  label: PostPage.name,
+  url: '/post',
+  builder: (context, routeData, globalData) => PostPage(
+    postModel: globalData['postModel'],
+  ),
+)
+
+// Route Navigation
+PostModel postModel = PostModel();
+NavigationManager.instance.push(
+  PostPage.name,
+  data: {'postModel': postModel},
+);
+```
+
+### Accessing globalData
+
+You can access and modify `globalData` at any time:
+
+```dart
+// Set data
+NavigationManager.instance.routerDelegate.globalData['selected_variant'] = 'A';
+
+// Access data
+String variant = NavigationManager.instance.routerDelegate.globalData['selected_variant'];
+```
+
+<Warning>
+`globalData` is not bound to the page lifecycle. Variables must be manually disposed or cleared. The URL of the page is used as the key for storing data.
+</Warning>
+
+## Type conversion helpers
+
+Since all parameters are strings, here are common conversion patterns:
+
+### Integer parameters
+
+```dart
+final id = int.tryParse(routeData.queryParameters['id'] ?? '') ?? 0;
+```
+
+### Double parameters
+
+```dart
+final price = double.tryParse(routeData.queryParameters['price'] ?? '') ?? 0.0;
+```
+
+### Boolean parameters
+
+```dart
+final isActive = routeData.queryParameters['active'] == 'true';
+```
+
+### Enum parameters
+
+```dart
+enum SortType { recent, popular, oldest }
+
+final sortType = SortType.values.firstWhere(
+  (e) => e.name == routeData.queryParameters['sort'],
+  orElse: () => SortType.recent,
+);
+```
+
+### List parameters
+
+```dart
+// URL: /products?tags=flutter,mobile,dart
+final tags = routeData.queryParameters['tags']?.split(',') ?? [];
+```
+
+## Comparison with Navigator 1
+
+Navigator 1 only supported `arguments`, which are not query parameters:
+
+<Warning>
+**Important:** Arguments are NOT query parameters or related to URL routing in any way. Arguments are an internal parameter used to pass data between pages from the Legacy Navigator 1 implementation.
+</Warning>
+
+NavigationUtils properly implements URL-based routing with real query and path parameters that work with:
+
+- Deep links
+- Web URLs
+- Browser back/forward buttons
+- Bookmarks
+- Share links
+
+<Tip>
+Use query parameters for optional data like filters and sorting. Use path parameters for required identifiers like IDs. Use `globalData` for non-serializable objects.
+</Tip>

@@ -1,0 +1,204 @@
+---
+title: Query parameters
+description: Learn how to pass and access query parameters in your Flutter navigation
+---
+
+Query parameters allow you to pass data between pages through URL parameters. NavigationUtils provides full support for query parameters, which are not available in Navigator 2 by default.
+
+## Why query parameters matter
+
+Navigator 2 treats query parameters as part of the URL string by default, meaning these URLs would all be treated as different pages:
+
+```
+/
+/?tab=community_page
+/?tab=community_page&post=80
+/?tab=message_page
+/?referrer=google_ads
+```
+
+NavigationUtils solves this by extracting query parameters from URLs, storing them separately, and passing them to your page builders.
+
+## Defining routes with query parameters
+
+Access query parameters via `routeData.queryParameters` in your `NavigationData` builder:
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  ),
+)
+```
+
+From the README example:
+
+```dart
+// Route Definition
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  ),
+)
+```
+
+## Passing query parameters
+
+Pass query parameters when navigating using the `queryParameters` parameter:
+
+```dart
+NavigationManager.instance.push(
+  ProjectPage.name, 
+  queryParameters: {'id': '320'}
+);
+```
+
+You can also pass query parameters with path-based navigation:
+
+```dart
+NavigationManager.instance.push(
+  '/project', 
+  queryParameters: {'id': '320'}
+);
+```
+
+## Multiple query parameters
+
+Pass multiple query parameters as a map:
+
+```dart
+NavigationManager.instance.push(
+  '/product',
+  queryParameters: {
+    'id': '123',
+    'category': 'electronics',
+    'sort': 'price',
+  },
+);
+```
+
+Access them in your builder:
+
+```dart
+NavigationData(
+  url: '/product',
+  builder: (context, routeData, globalData) => ProductPage(
+    id: routeData.queryParameters['id'] ?? '',
+    category: routeData.queryParameters['category'] ?? 'all',
+    sortBy: routeData.queryParameters['sort'] ?? 'default',
+  ),
+)
+```
+
+## Type conversion
+
+<Note>
+All URL parameters are passed as Strings because URLs are not "typed" by default.
+</Note>
+
+Convert query parameters to the appropriate type:
+
+### Integers and doubles
+
+```dart
+int? id = int.tryParse(routeData.queryParameters['id'] ?? '');
+double? price = double.tryParse(routeData.queryParameters['price'] ?? '');
+```
+
+### Booleans
+
+```dart
+bool isActive = routeData.queryParameters['active'] == 'true';
+```
+
+Pass boolean values as string `'true'` or `'false'`:
+
+```dart
+NavigationManager.instance.push(
+  '/settings',
+  queryParameters: {'darkMode': 'true'},
+);
+```
+
+### Lists
+
+For list values, use comma-separated strings:
+
+```dart
+// Passing a list
+NavigationManager.instance.push(
+  '/products',
+  queryParameters: {'tags': 'electronics,sale,featured'},
+);
+
+// Parsing the list
+List<String> tags = (routeData.queryParameters['tags'] ?? '')
+    .split(',')
+    .where((tag) => tag.isNotEmpty)
+    .toList();
+```
+
+## Optional vs required parameters
+
+Use null-aware operators to handle optional query parameters:
+
+```dart
+NavigationData(
+  url: '/products',
+  builder: (context, routeData, globalData) => ProductsPage(
+    category: routeData.queryParameters['category'], // Optional
+    page: int.tryParse(
+      routeData.queryParameters['page'] ?? '1'
+    )!, // Required with default
+  ),
+)
+```
+
+## Query parameters in deeplinks
+
+Query parameters work seamlessly with deeplinks. They're automatically extracted and passed to your destination:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/product',
+  destinationUrl: '/product',
+  mapArgumentsFunction: (pathParameters, queryParameters) {
+    // Access query parameters
+    String referrerId = queryParameters['referrer'] ?? '';
+    InstallReferrer.instance.setReferrerId(referrerId);
+    
+    return {'id': queryParameters['id'] ?? ''};
+  },
+)
+```
+
+## Best practices
+
+<Tip>
+Use query parameters for:
+- Optional page configuration (filters, sorting, pagination)
+- Tracking data (referrer, campaign, source)
+- Temporary state (search queries, selected tabs)
+</Tip>
+
+<Warning>
+Avoid using query parameters for:
+- Required route data (use path parameters instead)
+- Sensitive information (use secure data passing methods)
+- Large amounts of data (use globalData instead)
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Path parameters" icon="route" href="/guides/path-parameters">
+    Learn about dynamic route segments
+  </Card>
+  <Card title="Deeplinks" icon="link" href="/guides/deeplinks">
+    Handle deeplinks with parameters
+  </Card>
+</CardGroup>

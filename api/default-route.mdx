@@ -1,0 +1,235 @@
+---
+title: DefaultRoute
+description: Default route implementation extending RouteSettings
+---
+
+This class represents a route in the navigation system, containing path information, parameters, metadata, and optional grouping.
+
+## Properties
+
+<ResponseField name="path" type="String" required>
+  The path of this route.
+</ResponseField>
+
+<ResponseField name="label" type="String">
+  The label of this route, used for named navigation.
+</ResponseField>
+
+<ResponseField name="queryParameters" type="Map<String, String>" default="{}">
+  Query parameters for this route.
+</ResponseField>
+
+<ResponseField name="pathParameters" type="Map<String, String>" default="{}">
+  Path parameters extracted from the route path.
+</ResponseField>
+
+<ResponseField name="metadata" type="Map<String, dynamic>?">
+  Optional metadata associated with this route.
+</ResponseField>
+
+<ResponseField name="group" type="String?">
+  Optional group name for grouping related routes.
+</ResponseField>
+
+<ResponseField name="cacheKey" type="String?">
+  A unique cache key for this route, used to manage page caching.
+</ResponseField>
+
+<ResponseField name="uri" type="Uri">
+  The URI representation of this route.
+</ResponseField>
+
+<ResponseField name="arguments" type="Object?">
+  Optional route arguments (inherited from RouteSettings).
+</ResponseField>
+
+<ResponseField name="name" type="String?">
+  The route name (inherited from RouteSettings).
+</ResponseField>
+
+## Constructor
+
+```dart
+DefaultRoute({
+  required String path,
+  String label = '',
+  Map<String, String> queryParameters = const {},
+  Map<String, String> pathParameters = const {},
+  Map<String, dynamic>? metadata = const {},
+  String? group,
+  String? cacheKey,
+  Object? arguments
+})
+```
+
+<ParamField path="path" type="String" required>
+  The route path.
+</ParamField>
+
+<ParamField path="label" type="String" default="''">
+  Optional route label.
+</ParamField>
+
+<ParamField path="queryParameters" type="Map<String, String>" default="{}">
+  Query parameters.
+</ParamField>
+
+<ParamField path="pathParameters" type="Map<String, String>" default="{}">
+  Path parameters.
+</ParamField>
+
+<ParamField path="metadata" type="Map<String, dynamic>?" default="{}">
+  Optional metadata.
+</ParamField>
+
+<ParamField path="group" type="String?">
+  Optional group name.
+</ParamField>
+
+<ParamField path="cacheKey" type="String?">
+  Optional cache key.
+</ParamField>
+
+<ParamField path="arguments" type="Object?">
+  Optional route arguments.
+</ParamField>
+
+## Factory constructors
+
+### fromUrl
+
+```dart
+factory DefaultRoute.fromUrl(
+  String url, {
+  String label = '',
+  String? group,
+  Map<String, dynamic>? metadata,
+  String? cacheKey
+})
+```
+
+Creates a DefaultRoute from a URL string. Parses the URL and extracts path and query parameters.
+
+<ParamField path="url" type="String" required>
+  The URL to parse.
+</ParamField>
+
+<ParamField path="label" type="String" default="''">
+  Optional route label.
+</ParamField>
+
+<ParamField path="group" type="String?">
+  Optional group name.
+</ParamField>
+
+<ParamField path="metadata" type="Map<String, dynamic>?">
+  Optional metadata.
+</ParamField>
+
+<ParamField path="cacheKey" type="String?">
+  Optional cache key.
+</ParamField>
+
+### fromUri
+
+```dart
+factory DefaultRoute.fromUri(
+  Uri uri, {
+  String label = '',
+  String? group,
+  Map<String, dynamic>? metadata,
+  String? cacheKey
+})
+```
+
+Creates a DefaultRoute from a Uri object. Extracts path and query parameters from the URI.
+
+<ParamField path="uri" type="Uri" required>
+  The URI to parse.
+</ParamField>
+
+<ParamField path="label" type="String" default="''">
+  Optional route label.
+</ParamField>
+
+<ParamField path="group" type="String?">
+  Optional group name.
+</ParamField>
+
+<ParamField path="metadata" type="Map<String, dynamic>?">
+  Optional metadata.
+</ParamField>
+
+<ParamField path="cacheKey" type="String?">
+  Optional cache key.
+</ParamField>
+
+## Methods
+
+### copyWith
+
+```dart
+DefaultRoute copyWith({
+  String? label,
+  String? path,
+  Map<String, String>? queryParameters,
+  Map<String, String>? pathParameters,
+  Map<String, dynamic>? metadata,
+  String? group,
+  String? cacheKey,
+  Object? arguments
+})
+```
+
+Creates a copy of this route with the given fields replaced. All parameters are optional. If not provided, the original value is used.
+
+### operator []
+
+```dart
+operator [](String key)
+```
+
+Accesses query parameters using the bracket operator. Returns the value of the query parameter with the given key, or null if the key doesn't exist.
+
+## Example
+
+```dart
+// Create a route from a path
+final route = DefaultRoute(
+  path: '/home',
+  label: 'home',
+);
+
+// Create a route from a URL
+final route = DefaultRoute.fromUrl('/user/123?tab=profile');
+print(route.path); // '/user/123'
+print(route.queryParameters); // {'tab': 'profile'}
+
+// Access query parameters
+final tab = route['tab']; // 'profile'
+
+// Copy with modifications
+final newRoute = route.copyWith(
+  queryParameters: {'tab': 'settings'},
+);
+```
+
+## Type definitions
+
+### PopUntilRouteFunction
+
+```dart
+typedef PopUntilRouteFunction = bool Function(DefaultRoute route)
+```
+
+Function type for determining when to stop popping routes. Used in `popUntilRoute` to determine which route to stop at. Return true to stop at the given route, false to continue popping.
+
+### SetMainRoutesCallback
+
+```dart
+typedef SetMainRoutesCallback = List<DefaultRoute> Function(
+  List<DefaultRoute> controller
+)
+```
+
+Function type for customizing the route stack. Allows modification of the route stack before it's applied. The function receives the current route list and returns a modified list.

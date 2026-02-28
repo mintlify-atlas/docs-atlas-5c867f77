@@ -1,0 +1,196 @@
+---
+title: AnimatedStack
+description: A stack widget that animates transitions between children
+---
+
+This widget manages animations for child widgets, providing smooth transitions when children are added, removed, or reordered.
+
+## Properties
+
+<ResponseField name="children" type="List<Widget>" required>
+  The list of child widgets to display in the stack.
+</ResponseField>
+
+<ResponseField name="animation" type="AnimationBuilder" required>
+  Function that builds animated widgets from children and animations.
+</ResponseField>
+
+<ResponseField name="duration" type="Duration" required>
+  The duration of animations.
+</ResponseField>
+
+<ResponseField name="crossFadePosition" type="double" default="0.5">
+  Position in the animation timeline where cross-fade occurs (0.0 to 1.0).
+</ResponseField>
+
+<ResponseField name="initialAnimation" type="bool" default="true">
+  Whether to animate the initial child.
+</ResponseField>
+
+<ResponseField name="alignment" type="AlignmentGeometry" default="AlignmentDirectional.topStart">
+  How to align the children.
+</ResponseField>
+
+<ResponseField name="textDirection" type="TextDirection?">
+  The text direction for the stack.
+</ResponseField>
+
+<ResponseField name="fit" type="StackFit" default="StackFit.loose">
+  How to size the non-positioned children.
+</ResponseField>
+
+<ResponseField name="clipBehavior" type="Clip" default="Clip.hardEdge">
+  The clip behavior for the stack.
+</ResponseField>
+
+## Constructor
+
+```dart
+const AnimatedStack({
+  Key? key,
+  required Duration duration,
+  required AnimationBuilder animation,
+  required List<Widget> children,
+  bool initialAnimation = true,
+  double crossFadePosition = 0.5,
+  AlignmentGeometry alignment = AlignmentDirectional.topStart,
+  TextDirection? textDirection,
+  StackFit fit = StackFit.loose,
+  Clip clipBehavior = Clip.hardEdge
+})
+```
+
+<ParamField path="duration" type="Duration" required>
+  Animation duration.
+</ParamField>
+
+<ParamField path="animation" type="AnimationBuilder" required>
+  Animation builder function.
+</ParamField>
+
+<ParamField path="children" type="List<Widget>" required>
+  List of child widgets.
+</ParamField>
+
+<ParamField path="initialAnimation" type="bool" default="true">
+  Whether to animate the initial child.
+</ParamField>
+
+<ParamField path="crossFadePosition" type="double" default="0.5">
+  Position for cross-fade transition.
+</ParamField>
+
+<ParamField path="alignment" type="AlignmentGeometry" default="AlignmentDirectional.topStart">
+  Alignment for children.
+</ParamField>
+
+<ParamField path="textDirection" type="TextDirection?">
+  Text direction.
+</ParamField>
+
+<ParamField path="fit" type="StackFit" default="StackFit.loose">
+  How to size non-positioned children.
+</ParamField>
+
+<ParamField path="clipBehavior" type="Clip" default="Clip.hardEdge">
+  Clip behavior.
+</ParamField>
+
+## Type definitions
+
+### AnimationBuilder
+
+```dart
+typedef AnimationBuilder = Widget Function(
+  Widget child,
+  Animation<double> animation
+)
+```
+
+Function type for building animated widgets. Takes a child widget and an animation, returns an animated widget.
+
+## Example
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:navigation_utils/navigation_utils.dart';
+
+class AnimatedStackExample extends StatefulWidget {
+  @override
+  State<AnimatedStackExample> createState() => _AnimatedStackExampleState();
+}
+
+class _AnimatedStackExampleState extends State<AnimatedStackExample> {
+  List<Widget> pages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    pages = [
+      Container(key: ValueKey('page1'), color: Colors.red),
+    ];
+  }
+
+  void addPage() {
+    setState(() {
+      pages.add(
+        Container(
+          key: ValueKey('page${pages.length + 1}'),
+          color: Colors.blue,
+        ),
+      );
+    });
+  }
+
+  void removePage() {
+    if (pages.length > 1) {
+      setState(() {
+        pages.removeLast();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: AnimatedStack(
+        duration: Duration(milliseconds: 300),
+        children: pages,
+        animation: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: addPage,
+            child: Icon(Icons.add),
+          ),
+          SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: removePage,
+            child: Icon(Icons.remove),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+## Notes
+
+- All child widgets must have unique keys for proper animation tracking
+- The widget maintains animation controllers internally and disposes them automatically
+- Cross-fade position determines when the incoming animation starts relative to the outgoing animation
+- The widget optimizes rendering by using Offstage for non-visible children

@@ -1,0 +1,341 @@
+---
+title: Deeplinks
+description: Handle deeplinks in your Flutter app with DeeplinkDestination and openDeeplinkDestination
+---
+
+NavigationUtils provides a unique approach to deeplinks by treating them as data. Define all your deeplinks in a single list using `DeeplinkDestination`, making them easy to manage, update, and customize.
+
+## Why deeplinks as data
+
+Defining deeplinks as data provides several advantages:
+
+- **Centralization** - Manage all deeplinks in one place instead of scattered throughout your code
+- **Consistency** - Every deeplink follows the same structure and pattern
+- **Flexibility** - Dynamically generate, modify, or filter deeplinks based on your app's needs
+- **Testability** - Easy to test deeplink behavior without complex navigation setup
+
+## Basic deeplink setup
+
+Create a list of `DeeplinkDestination` instances:
+
+```dart
+List<DeeplinkDestination> deeplinkDestinations = [
+  DeeplinkDestination(
+    deeplinkUrl: '/deeplink/login',
+    destinationLabel: LoginPage.name),
+  DeeplinkDestination(
+    deeplinkUrl: '/deeplink/signup',
+    destinationLabel: SignUpPage.name),
+];
+```
+
+## DeeplinkDestination properties
+
+Each `DeeplinkDestination` can be configured with:
+
+### Required properties
+
+- `deeplinkUrl` - The URL pattern that triggers this deeplink (e.g., `/deeplink/login`)
+- `destinationLabel` or `destinationUrl` - Where to navigate when the deeplink is opened
+
+### Optional properties
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/login',
+  destinationLabel: LoginPage.name,
+  destinationUrl: '/login',
+  backstack: [InitializationPage.name, StartPage.name],
+  backstackRoutes: [InitializationRoute(), StartRoute()],
+  excludeDeeplinkNavigationPages: [ForgotPassword.name],
+  shouldNavigateDeeplinkFunction: () {
+    if (AuthService.instance.isAuthenticated) return false;
+    return true;
+  },
+  mapArgumentsFunction: (pathParameters, queryParameters) {
+    // Remap or process path and query parameters.
+    String referrerId = queryParameters['referrer'] ?? '';
+    InstallReferrer.instance.setReferrerId(referrerId);
+
+    return {'id': pathParameters['userId'] ?? ''};
+  },
+  runFunction: (pathParameters, queryParameters) async {
+    // Arbitrary function call for handling deeplinks without doing navigation.
+  },
+  authenticationRequired: false,
+)
+```
+
+### Property descriptions
+
+<Steps>
+  <Step title="destinationLabel / destinationUrl">
+    The named route or URL path where users navigate when opening this deeplink.
+  </Step>
+  
+  <Step title="backstack / backstackRoutes">
+    Define the route history stack. Only one of these can be set. Useful for ensuring users have proper navigation context after a deeplink.
+  </Step>
+  
+  <Step title="excludeDeeplinkNavigationPages">
+    List of pages where this deeplink should NOT navigate from (e.g., during onboarding).
+  </Step>
+  
+  <Step title="shouldNavigateDeeplinkFunction">
+    Custom function to determine if navigation should occur. Return `false` to prevent navigation.
+  </Step>
+  
+  <Step title="mapArgumentsFunction">
+    Transform or process path and query parameters before navigation.
+  </Step>
+  
+  <Step title="runFunction">
+    Execute custom logic without navigation, or after navigation completes. Perfect for analytics, sharing, or showing dialogs.
+  </Step>
+  
+  <Step title="authenticationRequired">
+    Boolean indicating whether the user must be authenticated to access this deeplink.
+  </Step>
+</Steps>
+
+## Opening deeplinks
+
+Use `NavigationUtils.openDeeplinkDestination` to process URIs and navigate:
+
+```dart
+class DefaultRouteParser {
+  static bool openDeeplink(Uri? uri) {
+    return NavigationUtils.openDeeplinkDestination(
+      deeplinkDestinations: deeplinkDestinations,
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      uri: uri,
+      authenticated: AuthService.instance.isAuthenticated,
+      currentRoute: NavigationManager.instance.currentRoute,
+      excludeDeeplinkNavigationPages: doNotNavigateDeeplinkPages,
+    );
+  }
+}
+```
+
+### Parameters
+
+- `uri` - The URI object representing the deeplink
+- `deeplinkDestinations` - Your list of deeplink definitions
+- `routerDelegate` - The router delegate that handles navigation
+- `authenticated` - Whether the user is authenticated (default: `true`)
+- `currentRoute` - The current route, used to check exclusion lists
+- `excludeDeeplinkNavigationPages` - Global list of pages to exclude from deeplink navigation
+- `redirectFunction` - Optional function to redirect to another route
+
+## Deeplink with path parameters
+
+Define deeplinks with dynamic path segments:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/link/project/:projectId',
+  destinationUrl: '/project/:projectId',
+)
+```
+
+When users open `/link/project/123`, they navigate to `/project/123` with `projectId` available in `routeData.pathParameters`.
+
+## Deeplink with query parameters
+
+Query parameters are automatically extracted and passed:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/product',
+  destinationUrl: '/product',
+  mapArgumentsFunction: (pathParameters, queryParameters) {
+    // Access query parameters
+    String referrerId = queryParameters['referrer'] ?? '';
+    InstallReferrer.instance.setReferrerId(referrerId);
+    
+    return {'id': queryParameters['id'] ?? ''};
+  },
+)
+```
+
+Opening `/deeplink/product?id=123&referrer=email` processes both query parameters.
+
+## Function-only deeplinks
+
+Use deeplinks to trigger functionality without navigation:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/share/:postId',
+  runFunction: (pathParameters, queryParameters) async {
+    String postId = pathParameters['postId'] ?? '';
+    await ShareService.sharePost(postId);
+    // Show share sheet without navigating
+  },
+)
+```
+
+<Tip>
+The `runFunction` is also called after navigation completes, allowing you to run logic after the user reaches the destination page.
+</Tip>
+
+## Deeplink redirect
+
+Redirect deeplinks based on custom logic:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/content/:id',
+  destinationUrl: '/content/:id',
+  redirectFunction: (pathParameters, queryParameters, redirect) {
+    if (pathParameters.containsKey('id') && queryParameters.containsKey('action')) {
+      redirect(
+        label: 'newDestination',
+        pathParameters: {'id': pathParameters['id']!},
+        queryParameters: {'action': queryParameters['action']!},
+        globalData: {'additionalData': 'example'}
+      );
+      return Future.value(true);
+    }
+    return Future.value(false);
+  },
+)
+```
+
+The `redirectFunction` returns:
+- `true` - Navigation proceeds to the redirected destination
+- `false` - Navigation proceeds to the original destination
+
+## Authentication-required deeplinks
+
+Protect deeplinks that require authentication:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/profile',
+  destinationUrl: '/profile',
+  authenticationRequired: true,
+)
+```
+
+Pass the authentication state when opening:
+
+```dart
+NavigationUtils.openDeeplinkDestination(
+  uri: uri,
+  deeplinkDestinations: deeplinkDestinations,
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  authenticated: AuthService.instance.isAuthenticated, // Check auth state
+);
+```
+
+<Warning>
+If `authenticationRequired` is `true` and `authenticated` is `false`, the deeplink navigation will be blocked.
+</Warning>
+
+## Conditional navigation
+
+Prevent navigation based on custom logic:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/premium',
+  destinationUrl: '/premium',
+  shouldNavigateDeeplinkFunction: () {
+    // Only navigate if user has premium
+    if (UserService.instance.isPremium) return true;
+    return false;
+  },
+)
+```
+
+## Async navigation
+
+Perform async operations before navigating:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/secure',
+  destinationUrl: '/secure',
+  shouldNavigateDeeplinkFunction: () async {
+    // Check async authentication
+    bool isVerified = await BiometricService.verify();
+    return isVerified;
+  },
+)
+```
+
+## Excluding pages from deeplinks
+
+Prevent deeplinks from navigating while on certain pages:
+
+```dart
+// Global exclusion list
+List<String> doNotNavigatePages = [
+  OnboardingPage.name,
+  TutorialPage.name,
+];
+
+NavigationUtils.openDeeplinkDestination(
+  uri: uri,
+  deeplinkDestinations: deeplinkDestinations,
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  currentRoute: NavigationManager.instance.currentRoute,
+  excludeDeeplinkNavigationPages: doNotNavigatePages,
+);
+```
+
+You can also exclude pages per deeplink:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/settings',
+  destinationUrl: '/settings',
+  excludeDeeplinkNavigationPages: [SetupWizard.name],
+)
+```
+
+## Best practices
+
+<Tip>
+**Organize deeplinks by feature**
+
+```dart
+List<DeeplinkDestination> get authDeeplinks => [
+  DeeplinkDestination(...),
+];
+
+List<DeeplinkDestination> get contentDeeplinks => [
+  DeeplinkDestination(...),
+];
+
+List<DeeplinkDestination> get allDeeplinks => [
+  ...authDeeplinks,
+  ...contentDeeplinks,
+];
+```
+</Tip>
+
+<Tip>
+**Use consistent URL patterns**
+
+Prefix all deeplinks with `/deeplink/` or `/dl/` to distinguish them from regular routes:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/product/:id',
+  destinationUrl: '/product/:id',
+)
+```
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Route guards" icon="shield" href="/guides/route-guards">
+    Protect routes with authentication and custom guards
+  </Card>
+  <Card title="Path parameters" icon="route" href="/guides/path-parameters">
+    Use dynamic segments in deeplinks
+  </Card>
+</CardGroup>

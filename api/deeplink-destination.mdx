@@ -1,0 +1,235 @@
+---
+title: DeeplinkDestination
+description: Configuration for handling deeplink destinations
+---
+
+This class defines how a deeplink URI should be processed and where it should navigate to, including optional transformations and callbacks.
+
+## Properties
+
+<ResponseField name="deeplinkUrl" type="String" required>
+  The deeplink URL pattern to match against incoming deeplinks.
+</ResponseField>
+
+<ResponseField name="destinationLabel" type="String">
+  The label of the destination route to navigate to. This should match a route label defined in your navigation routes.
+</ResponseField>
+
+<ResponseField name="destinationUrl" type="String">
+  The URL of the destination route to navigate to. Alternative to destinationLabel for URL-based navigation.
+</ResponseField>
+
+<ResponseField name="backstack" type="List<String>?">
+  Optional list of route labels to set as backstack before navigating. If provided, these routes will be pushed onto the navigation stack before navigating to the destination.
+</ResponseField>
+
+<ResponseField name="backstackRoutes" type="List<DefaultRoute>?">
+  Optional list of route objects to set as backstack before navigating. Alternative to backstack for more control over route configuration. Cannot be used together with backstack.
+</ResponseField>
+
+<ResponseField name="excludeDeeplinkNavigationPages" type="List<String>" default="[]">
+  List of route names/paths from which deeplink navigation should be excluded. If the current route matches any of these, the deeplink will not be processed.
+</ResponseField>
+
+<ResponseField name="shouldNavigateDeeplinkFunction" type="ShouldNavigateDeeplinkFunction?">
+  Optional function to determine if deeplink navigation should proceed. If provided, this function is called to check if navigation should occur. Return false to prevent navigation.
+</ResponseField>
+
+<ResponseField name="mapPathParameterFunction" type="MapPathParameterFunction?">
+  Optional function to transform path parameters before navigation.
+</ResponseField>
+
+<ResponseField name="mapQueryParameterFunction" type="MapQueryParameterFunction?">
+  Optional function to transform query parameters before navigation.
+</ResponseField>
+
+<ResponseField name="mapArgumentsFunction" type="MapArgumentsFunction?">
+  Optional function to create route arguments from parameters.
+</ResponseField>
+
+<ResponseField name="mapGlobalDataFunction" type="MapGlobalDataFunction?">
+  Optional function to create global data from parameters.
+</ResponseField>
+
+<ResponseField name="redirectFunction" type="RedirectFunction?">
+  Optional function to handle custom deeplink redirection logic. If provided, this function can programmatically navigate to a different route.
+</ResponseField>
+
+<ResponseField name="runFunction" type="RunFunction?">
+  Optional function to run custom logic when deeplink is opened. This function is called regardless of whether navigation occurs.
+</ResponseField>
+
+<ResponseField name="authenticationRequired" type="bool" default="false">
+  Whether authentication is required to navigate to this deeplink destination.
+</ResponseField>
+
+<ResponseField name="uri" type="Uri">
+  The parsed URI from deeplinkUrl.
+</ResponseField>
+
+<ResponseField name="path" type="String">
+  The canonical path from deeplinkUrl.
+</ResponseField>
+
+## Constructor
+
+```dart
+const DeeplinkDestination({
+  String deeplinkUrl = '',
+  String destinationLabel = '',
+  String destinationUrl = '',
+  List<String>? backstack,
+  List<DefaultRoute>? backstackRoutes,
+  List<String> excludeDeeplinkNavigationPages = const [],
+  ShouldNavigateDeeplinkFunction? shouldNavigateDeeplinkFunction,
+  MapPathParameterFunction? mapPathParameterFunction,
+  MapQueryParameterFunction? mapQueryParameterFunction,
+  MapArgumentsFunction? mapArgumentsFunction,
+  MapGlobalDataFunction? mapGlobalDataFunction,
+  RedirectFunction? redirectFunction,
+  RunFunction? runFunction,
+  bool authenticationRequired = false
+})
+```
+
+Either destinationLabel, destinationUrl, or runFunction must be provided. backstack and backstackRoutes cannot both be provided.
+
+## Type definitions
+
+### ShouldNavigateDeeplinkFunction
+
+```dart
+typedef ShouldNavigateDeeplinkFunction = bool Function(
+  Uri deeplink,
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters
+)
+```
+
+Function type that determines whether a deeplink should be navigated to. Returns true if navigation should proceed, false otherwise.
+
+### MapPathParameterFunction
+
+```dart
+typedef MapPathParameterFunction = Map<String, String> Function(
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters
+)
+```
+
+Function type that maps path parameters to new path parameters. Used to transform path parameters before navigation.
+
+### MapQueryParameterFunction
+
+```dart
+typedef MapQueryParameterFunction = Map<String, String> Function(
+  Map<String, String> queryParameters,
+  Map<String, String> pathParameters
+)
+```
+
+Function type that maps query parameters to new query parameters. Used to transform query parameters before navigation.
+
+### MapArgumentsFunction
+
+```dart
+typedef MapArgumentsFunction = Object? Function(
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters
+)
+```
+
+Function type that maps path and query parameters to route arguments. Used to create custom arguments object from parameters.
+
+### MapGlobalDataFunction
+
+```dart
+typedef MapGlobalDataFunction = Map<String, dynamic> Function(
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters
+)
+```
+
+Function type that maps path and query parameters to global data. Used to create custom global data map from parameters.
+
+### RedirectFunction
+
+```dart
+typedef RedirectFunction = Future<bool> Function(
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters,
+  void Function({
+    String? label,
+    String? url,
+    Map<String, String>? pathParameters,
+    Map<String, String>? queryParameters,
+    Map<String, dynamic>? globalData,
+    Object? arguments
+  }) redirect
+)
+```
+
+Function type that handles deeplink redirection. The redirect callback can be used to programmatically navigate to a different route. Returns true if redirect was handled, false to use default navigation behavior.
+
+### RunFunction
+
+```dart
+typedef RunFunction = Future<void> Function(
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters
+)
+```
+
+Function type that runs custom logic when a deeplink is opened. This function is called regardless of whether navigation occurs, allowing for side effects like analytics tracking.
+
+## Example
+
+```dart
+// Basic deeplink destination
+DeeplinkDestination(
+  deeplinkUrl: '/product/:id',
+  destinationLabel: 'product-detail',
+)
+
+// With parameter mapping
+DeeplinkDestination(
+  deeplinkUrl: '/user/:userId',
+  destinationLabel: 'user-profile',
+  mapArgumentsFunction: (pathParams, queryParams) {
+    return UserArguments(userId: pathParams['userId']);
+  },
+)
+
+// With authentication requirement
+DeeplinkDestination(
+  deeplinkUrl: '/account/settings',
+  destinationLabel: 'settings',
+  authenticationRequired: true,
+  backstack: ['/home'],
+)
+
+// With custom redirect logic
+DeeplinkDestination(
+  deeplinkUrl: '/share/:postId',
+  destinationLabel: 'post-detail',
+  redirectFunction: (pathParams, queryParams, redirect) async {
+    // Custom logic to determine redirect
+    final postId = pathParams['postId'];
+    if (postId == null) {
+      redirect(label: 'home');
+      return true;
+    }
+    return false; // Use default navigation
+  },
+)
+
+// With analytics tracking
+DeeplinkDestination(
+  deeplinkUrl: '/promo/:code',
+  destinationLabel: 'promo',
+  runFunction: (pathParams, queryParams) async {
+    // Track promo code usage
+    analytics.logEvent('promo_opened', pathParams);
+  },
+)
+```

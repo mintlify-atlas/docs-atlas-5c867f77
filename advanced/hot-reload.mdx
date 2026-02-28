@@ -1,0 +1,321 @@
+---
+title: Enable hot reload for routes
+description: Use the reassemble() method to enable hot reload when adding or changing routes
+---
+
+By default, hot reload doesn't detect changes to your route definitions in Navigator 2. NavigationUtils provides a simple solution to enable hot reload for route changes.
+
+## The problem
+
+When you add or modify routes during development, hot reload won't apply the changes. This is because:
+
+- The Navigator widget is static to avoid rebuilding on every navigation event
+- Route lists are often defined as top-level variables
+- Flutter's hot reload only reloads the widget build path
+
+Without hot reload support, you'd need to perform a full restart every time you change routes, which is slow and interrupts your development flow.
+
+## The solution
+
+Override the `reassemble()` method in your app widget to update routes on hot reload:
+
+```dart
+class _MyAppState extends State<MyApp> {
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routes;
+    super.reassemble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+## Complete example
+
+Here's a full working example from `/home/daytona/workspace/source/example/lib/main.dart:37`:
+
+```dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:navigation_utils/navigation_utils.dart';
+
+List<NavigationData> routes = [
+  NavigationData(
+    label: MyHomePage.name,
+    url: '/',
+    builder: (context, routeData, globalData) => const MyHomePage()
+  ),
+  NavigationData(
+    label: ProjectPage.name,
+    url: '/project/:id',
+    builder: (context, routeData, globalData) => ProjectPage(
+      id: int.tryParse(routeData.pathParameters['id'] ?? '') ?? 0
+    )
+  ),
+];
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(navigationDataRoutes: routes),
+    routeInformationParser: DefaultRouteInformationParser()
+  );
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  /// Enables hot reload for navigation route changes. Without this, adding new routes
+  /// and any route changes won't apply with hot reload because the Navigator is static.
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routes;
+    super.reassemble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+## How it works
+
+<Steps>
+  <Step title="reassemble() is called on hot reload">
+    When you hot reload your app, Flutter calls `reassemble()` on all widget states.
+  </Step>
+
+  <Step title="Routes are updated">
+    The method updates the router delegate's route list with the latest definitions:
+
+    ```dart
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routes;
+    ```
+  </Step>
+
+  <Step title="Navigator rebuilds with new routes">
+    The Navigator now has access to the updated routes and can use them immediately.
+  </Step>
+</Steps>
+
+## Important requirements
+
+<Warning>
+  For hot reload to work properly with routes, follow these requirements:
+</Warning>
+
+### Use getters for routes
+
+Define your routes using a getter instead of a final variable:
+
+```dart
+// ✅ Good - uses getter
+List<NavigationData> get routes => [
+  NavigationData(
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(),
+  ),
+];
+
+// ❌ Bad - uses final variable
+final List<NavigationData> routes = [
+  NavigationData(
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(),
+  ),
+];
+```
+
+**Why?** Top-level final variables are not re-initialized on hot reload. Using a getter ensures the route list is regenerated each time it's accessed.
+
+### Avoid final references
+
+Don't cache route references in final variables:
+
+```dart
+// ✅ Good
+class _MyAppState extends State<MyApp> {
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routes;
+    super.reassemble();
+  }
+}
+
+// ❌ Bad
+class _MyAppState extends State<MyApp> {
+  final routeList = routes; // This won't update on hot reload
+  
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = routeList;
+    super.reassemble();
+  }
+}
+```
+
+### Update static Navigator variables
+
+The Navigator is intentionally static to avoid rebuilding on every navigation event. The `reassemble()` method updates these internal static variables so they reflect your route changes.
+
+## What gets hot reloaded
+
+With this setup, you can hot reload changes to:
+
+- Adding new routes
+- Removing routes
+- Changing route URLs
+- Modifying route builders
+- Updating route metadata
+- Changing page types
+- Modifying route parameters
+
+## Example workflow
+
+<Steps>
+  <Step title="Start with initial routes">
+    ```dart
+    List<NavigationData> get routes => [
+      NavigationData(
+        url: '/',
+        builder: (context, routeData, globalData) => HomePage(),
+      ),
+    ];
+    ```
+  </Step>
+
+  <Step title="Add a new route">
+    ```dart
+    List<NavigationData> get routes => [
+      NavigationData(
+        url: '/',
+        builder: (context, routeData, globalData) => HomePage(),
+      ),
+      NavigationData(
+        url: '/settings',
+        builder: (context, routeData, globalData) => SettingsPage(),
+      ),
+    ];
+    ```
+  </Step>
+
+  <Step title="Hot reload">
+    Press `r` in your terminal or click the hot reload button. The new route is immediately available without a full restart.
+  </Step>
+
+  <Step title="Navigate to new route">
+    ```dart
+    NavigationManager.instance.push('/settings');
+    ```
+
+    The new route works immediately!
+  </Step>
+</Steps>
+
+## Why reassemble() works
+
+The `reassemble()` method is part of Flutter's hot reload mechanism:
+
+- Called on every hot reload
+- Runs before the build method
+- Perfect for updating static or cached data
+- Doesn't affect production builds (only runs during development)
+
+## Production impact
+
+<Note>
+  The `reassemble()` method only runs during development hot reload. It has zero impact on production builds or app performance.
+</Note>
+
+## Troubleshooting
+
+### Routes not updating on hot reload
+
+**Problem:** You press hot reload but your route changes don't appear.
+
+**Solution:** Check that:
+1. You're using a getter for routes, not a final variable
+2. You've added the `reassemble()` method to your app widget
+3. You're calling `super.reassemble()` after updating routes
+
+### Need full restart for route changes
+
+**Problem:** You still need to fully restart the app for route changes.
+
+**Solution:** This usually means you're using final variables somewhere. Convert to getters:
+
+```dart
+// Change this:
+final routes = [...];
+
+// To this:
+List<NavigationData> get routes => [...];
+```
+
+### Hot reload works but navigation fails
+
+**Problem:** Hot reload updates routes, but navigating to new routes fails.
+
+**Solution:** Make sure your route definitions are correct:
+- URLs start with `/`
+- Builders return valid widgets
+- Labels don't conflict with existing routes
+
+## Alternative: Use route files
+
+For larger apps, consider organizing routes in separate files:
+
+```dart
+// routes/app_routes.dart
+List<NavigationData> get appRoutes => [
+  ...homeRoutes,
+  ...profileRoutes,
+  ...settingsRoutes,
+];
+
+// routes/home_routes.dart
+List<NavigationData> get homeRoutes => [
+  NavigationData(
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(),
+  ),
+];
+```
+
+Then use in your app:
+
+```dart
+class _MyAppState extends State<MyApp> {
+  @override
+  void reassemble() {
+    NavigationManager.instance.routerDelegate.navigationDataRoutes = appRoutes;
+    super.reassemble();
+  }
+}
+```
+
+This keeps your code organized while maintaining hot reload functionality.

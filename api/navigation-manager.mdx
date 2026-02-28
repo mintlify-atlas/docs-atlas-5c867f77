@@ -1,0 +1,499 @@
+---
+title: NavigationManager
+description: Singleton manager for navigation operations
+---
+
+Singleton manager for navigation operations. This class provides a centralized interface for navigation operations and manages the router delegate and route information parser.
+
+## Properties
+
+<ResponseField name="instance" type="NavigationManager">
+  Gets the singleton instance of NavigationManager. Throws an exception if `init()` has not been called.
+</ResponseField>
+
+<ResponseField name="routerDelegate" type="BaseRouterDelegate">
+  The router delegate managing navigation.
+</ResponseField>
+
+<ResponseField name="routeInformationParser" type="DefaultRouteInformationParser">
+  The route information parser.
+</ResponseField>
+
+<ResponseField name="getCurrentRoute" type="Stream<DefaultRoute>">
+  Stream of current route changes.
+</ResponseField>
+
+<ResponseField name="currentRoute" type="DefaultRoute?">
+  The current route, or null if no route is active.
+</ResponseField>
+
+<ResponseField name="routes" type="List<DefaultRoute>">
+  The current list of routes in the navigation stack.
+</ResponseField>
+
+<ResponseField name="setMainRoutes" type="SetMainRoutesCallback?">
+  Sets the callback for customizing the route stack.
+</ResponseField>
+
+<ResponseField name="setInitialRouteFunction" type="DefaultRoute Function(Uri initialRoute)?">
+  Sets the function to determine the initial route from a URI.
+</ResponseField>
+
+<ResponseField name="setInitialRoutePathFunction" type="String Function(Uri initialRoute)?">
+  Sets the function to determine the initial route path from a URI.
+</ResponseField>
+
+## Methods
+
+### init
+
+```dart
+static NavigationManager init({
+  required BaseRouterDelegate mainRouterDelegate,
+  required DefaultRouteInformationParser routeInformationParser
+})
+```
+
+Initializes the NavigationManager singleton. This must be called before using `NavigationManager.instance`.
+
+<ParamField path="mainRouterDelegate" type="BaseRouterDelegate" required>
+  The router delegate to use.
+</ParamField>
+
+<ParamField path="routeInformationParser" type="DefaultRouteInformationParser" required>
+  The route information parser to use.
+</ParamField>
+
+Returns the initialized NavigationManager instance.
+
+### push
+
+```dart
+Future<dynamic> push(
+  String name, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  bool apply = true
+})
+```
+
+Pushes a new route onto the navigation stack.
+
+<ParamField path="name" type="String" required>
+  The route name or path to push.
+</ParamField>
+
+<ParamField path="queryParameters" type="Map<String, String>?">
+  Query parameters for the route.
+</ParamField>
+
+<ParamField path="arguments" type="Object?">
+  Arguments to pass to the route.
+</ParamField>
+
+<ParamField path="data" type="Map<String, dynamic>" default="{}">
+  Global data associated with the route.
+</ParamField>
+
+<ParamField path="pathParameters" type="Map<String, String>" default="{}">
+  Path parameters for the route.
+</ParamField>
+
+<ParamField path="apply" type="bool" default="true">
+  Whether to apply changes immediately.
+</ParamField>
+
+### pushRoute
+
+```dart
+Future<dynamic> pushRoute(DefaultRoute route, {bool apply = true})
+```
+
+Pushes a route object onto the navigation stack.
+
+<ParamField path="route" type="DefaultRoute" required>
+  The route to push.
+</ParamField>
+
+<ParamField path="apply" type="bool" default="true">
+  Whether to apply changes immediately.
+</ParamField>
+
+### pop
+
+```dart
+void pop([dynamic result, bool apply = true, bool all = false])
+```
+
+Pops the current route from the navigation stack.
+
+<ParamField path="result" type="dynamic">
+  Result to return to the previous route.
+</ParamField>
+
+<ParamField path="apply" type="bool" default="true">
+  Whether to apply changes immediately.
+</ParamField>
+
+<ParamField path="all" type="bool" default="false">
+  Whether to pop all routes.
+</ParamField>
+
+### popUntil
+
+```dart
+void popUntil(
+  String name, {
+  bool apply = true,
+  bool all = false,
+  bool inclusive = false
+})
+```
+
+Pops routes until the specified route is reached.
+
+<ParamField path="name" type="String" required>
+  The route name to pop until.
+</ParamField>
+
+<ParamField path="apply" type="bool" default="true">
+  Whether to apply changes immediately.
+</ParamField>
+
+<ParamField path="all" type="bool" default="false">
+  Whether to allow popping all routes.
+</ParamField>
+
+<ParamField path="inclusive" type="bool" default="false">
+  Whether to include the target route in the pop.
+</ParamField>
+
+### popUntilRoute
+
+```dart
+void popUntilRoute(
+  PopUntilRouteFunction popUntilRouteFunction, {
+  bool apply = true,
+  bool all = false,
+  bool inclusive = false
+})
+```
+
+Pops routes until the function returns true.
+
+<ParamField path="popUntilRouteFunction" type="PopUntilRouteFunction" required>
+  Function that returns true to stop popping.
+</ParamField>
+
+<ParamField path="apply" type="bool" default="true">
+  Whether to apply changes immediately.
+</ParamField>
+
+<ParamField path="all" type="bool" default="false">
+  Whether to allow popping all routes.
+</ParamField>
+
+<ParamField path="inclusive" type="bool" default="false">
+  Whether to include the target route in the pop.
+</ParamField>
+
+### pushAndRemoveUntil
+
+```dart
+Future<dynamic> pushAndRemoveUntil(
+  String name,
+  String routeUntilName, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  bool apply = true,
+  bool inclusive = false
+})
+```
+
+Pushes a route and removes routes until the specified route.
+
+### pushAndRemoveUntilRoute
+
+```dart
+Future<dynamic> pushAndRemoveUntilRoute(
+  DefaultRoute route,
+  PopUntilRouteFunction popUntilRouteFunction, {
+  bool apply = true,
+  bool inclusive = false
+})
+```
+
+Pushes a route and removes routes until the function returns true.
+
+### remove
+
+```dart
+void remove(String name, {bool apply = true})
+```
+
+Removes a route from the stack by name.
+
+### removeRoute
+
+```dart
+void removeRoute(DefaultRoute route, {bool apply = true})
+```
+
+Removes a specific route from the stack.
+
+### pushReplacement
+
+```dart
+Future<dynamic> pushReplacement(
+  String name, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  dynamic result,
+  bool apply = true
+})
+```
+
+Replaces the current route with a new one.
+
+### pushReplacementRoute
+
+```dart
+Future<dynamic> pushReplacementRoute(
+  DefaultRoute route,
+  [dynamic result, bool apply = true]
+)
+```
+
+Replaces the current route with a route object.
+
+### removeBelow
+
+```dart
+void removeBelow(String name, {bool apply = true})
+```
+
+Removes the route below the specified route.
+
+### removeRouteBelow
+
+```dart
+void removeRouteBelow(DefaultRoute route, {bool apply = true})
+```
+
+Removes the route below the specified route object.
+
+### removeAbove
+
+```dart
+void removeAbove(String name, {bool apply = true})
+```
+
+Removes the route above the specified route.
+
+### removeRouteAbove
+
+```dart
+void removeRouteAbove(DefaultRoute route, {bool apply = true})
+```
+
+Removes the route above the specified route object.
+
+### removeGroup
+
+```dart
+void removeGroup(String name, {bool apply = true, bool all = false})
+```
+
+Removes all routes with the specified group name.
+
+### replace
+
+```dart
+void replace(
+  String oldName, {
+  String? newName,
+  DefaultRoute? newRoute,
+  Map<String, dynamic>? data,
+  bool apply = true
+})
+```
+
+Replaces a route with a new route.
+
+### replaceRoute
+
+```dart
+void replaceRoute(DefaultRoute oldRoute, DefaultRoute newRoute, {bool apply = true})
+```
+
+Replaces a route object with another route object.
+
+### replaceBelow
+
+```dart
+void replaceBelow(String anchorName, String name, {bool apply = true})
+```
+
+Replaces the route below the anchor route.
+
+### replaceRouteBelow
+
+```dart
+void replaceRouteBelow(DefaultRoute anchorRoute, DefaultRoute newRoute, {bool apply = true})
+```
+
+Replaces the route below the anchor route object.
+
+### set
+
+```dart
+void set(List<String> names, {bool apply = true})
+```
+
+Sets the entire navigation stack to the specified routes.
+
+### setRoutes
+
+```dart
+void setRoutes(List<DefaultRoute> routes, {bool apply = true})
+```
+
+Sets the entire navigation stack to the specified route objects.
+
+### setBackstack
+
+```dart
+void setBackstack(List<String> names, {bool apply = true})
+```
+
+Sets the backstack while preserving the current route.
+
+### setBackstackRoutes
+
+```dart
+void setBackstackRoutes(List<DefaultRoute> routes, {bool apply = true})
+```
+
+Sets the backstack with route objects while preserving the current route.
+
+### setOverride
+
+```dart
+void setOverride(Page Function(String name) pageBuilder, {bool apply = true})
+```
+
+Sets a page override that replaces the normal navigation stack.
+
+### removeOverride
+
+```dart
+void removeOverride({bool apply = true})
+```
+
+Removes the page override.
+
+### setQueryParameters
+
+```dart
+void setQueryParameters(Map<String, String> queryParameters, {bool apply = true})
+```
+
+Sets query parameters on the current route.
+
+### setOverlay
+
+```dart
+void setOverlay(Page Function(String name) pageBuilder, {bool apply = true})
+```
+
+Sets a page overlay on top of the navigation stack.
+
+### removeOverlay
+
+```dart
+void removeOverlay({bool apply = true})
+```
+
+Removes the page overlay.
+
+### navigate
+
+```dart
+void navigate(BuildContext context, Function function)
+```
+
+Executes navigation changes within a Router.navigate context.
+
+### neglect
+
+```dart
+void neglect(BuildContext context, Function function)
+```
+
+Executes navigation changes within a Router.neglect context.
+
+### apply
+
+```dart
+void apply()
+```
+
+Applies pending navigation changes.
+
+### clear
+
+```dart
+void clear()
+```
+
+Clears the navigation stack.
+
+### pauseNavigation
+
+```dart
+void pauseNavigation({Page Function(String name)? pageBuilder})
+```
+
+Pauses and defers navigation. Displays a CupertinoActivityIndicator page until `resumeNavigation` is called. Useful for forcing delayed navigation until an async operation completes.
+
+<ParamField path="pageBuilder" type="Page Function(String name)?">
+  Optional custom loading page builder.
+</ParamField>
+
+### resumeNavigation
+
+```dart
+void resumeNavigation()
+```
+
+Resumes navigation and removes page overrides. Calls `removeOverride` under the hood. Has no effect if `pauseNavigation` has not been called.
+
+### nested
+
+```dart
+List<Widget> nested({
+  required BuildContext context,
+  required List<NavigationData> routes,
+  bool removeDuplicates = true
+})
+```
+
+Returns a list of widgets for building nested navigation. Build tabbed navigation and nested page navigation flows.
+
+<ParamField path="context" type="BuildContext" required>
+  The build context.
+</ParamField>
+
+<ParamField path="routes" type="List<NavigationData>" required>
+  List of NavigationData defining the nested routes.
+</ParamField>
+
+<ParamField path="removeDuplicates" type="bool" default="true">
+  Whether to remove duplicate widgets.
+</ParamField>

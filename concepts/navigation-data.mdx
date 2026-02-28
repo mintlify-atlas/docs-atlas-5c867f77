@@ -1,0 +1,318 @@
+---
+title: Navigation data
+description: Learn about the NavigationData class that defines route configuration in NavigationUtils
+---
+
+The `NavigationData` class is the core building block for defining routes in NavigationUtils. It encapsulates all the necessary information for a route including the URL pattern, page builder, and optional metadata.
+
+## Overview
+
+Each route in your application is defined using a `NavigationData` instance. This class maps URLs to specific pages and provides configuration options for page transitions, dialogs, and more.
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => const ProjectPage(),
+)
+```
+
+## Properties
+
+<ParamField path="label" type="String?">
+  Optional label for the route, used for named navigation. This allows you to reference routes by name instead of URL, similar to Navigator 1.
+  
+  ```dart
+  NavigationData(
+    label: ProjectsPage.name,
+    url: '/projects',
+    builder: (context, routeData, globalData) => const ProjectsPage(),
+  )
+  ```
+</ParamField>
+
+<ParamField path="url" type="String" required>
+  The URL pattern for this route. Must start with `/`. Supports path parameters using `:` syntax.
+  
+  ```dart
+  // Simple URL
+  url: '/projects'
+  
+  // URL with path parameter
+  url: '/project/:id'
+  
+  // Nested URL
+  url: '/user/:userId/posts/:postId'
+  ```
+</ParamField>
+
+<ParamField path="builder" type="NavigationPageFactory" required>
+  Function that builds the widget for this route. Receives three parameters:
+  - `context` - The build context
+  - `routeData` - Route data containing path, query parameters, etc.
+  - `globalData` - Global data associated with the route
+  
+  ```dart
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  )
+  ```
+</ParamField>
+
+<ParamField path="pageType" type="PageType?">
+  The type of page transition to use. Available options:
+  - `PageType.material` - Material Design page transition (default)
+  - `PageType.transparent` - Transparent page transition
+  - `PageType.cupertino` - iOS-style page transition
+  
+  ```dart
+  NavigationData(
+    url: '/dialog',
+    pageType: PageType.transparent,
+    builder: (context, routeData, globalData) => DialogPage(),
+  )
+  ```
+</ParamField>
+
+<ParamField path="fullScreenDialog" type="bool?">
+  Whether this route should be displayed as a fullscreen dialog. When `true`, the page will be presented modally.
+  
+  ```dart
+  NavigationData(
+    url: '/settings',
+    fullScreenDialog: true,
+    builder: (context, routeData, globalData) => SettingsPage(),
+  )
+  ```
+</ParamField>
+
+<ParamField path="barrierColor" type="Color?">
+  The barrier color for modal routes. Only applies when using transparent page type.
+  
+  ```dart
+  NavigationData(
+    url: '/overlay',
+    pageType: PageType.transparent,
+    barrierColor: Colors.black54,
+    builder: (context, routeData, globalData) => OverlayPage(),
+  )
+  ```
+</ParamField>
+
+<ParamField path="metadata" type="Map<String, dynamic>">
+  Optional metadata associated with this route. Useful for route guards, analytics, or custom logic.
+  
+  ```dart
+  NavigationData(
+    url: '/premium',
+    metadata: {'requiresAuth': true, 'tier': 'premium'},
+    builder: (context, routeData, globalData) => PremiumPage(),
+  )
+  ```
+</ParamField>
+
+<ParamField path="pageBuilder" type="CustomPageBuilder?">
+  Optional custom page builder for this route. If provided, this takes precedence over the default page building logic.
+  
+  ```dart
+  NavigationData(
+    url: '/custom',
+    builder: (context, routeData, globalData) => CustomPage(),
+    pageBuilder: (key, name, child, routeData, globalData, arguments) {
+      return CustomTransitionPage(
+        key: key,
+        name: name,
+        child: child,
+      );
+    },
+  )
+  ```
+</ParamField>
+
+<ParamField path="group" type="String?">
+  Routes can be grouped together by setting a common `group` name. By default, Flutter identifies routes with unique URLs as unique pages. Setting a `group` alias overrides this behavior and identifies those routes as the same page.
+  
+  This is particularly useful for tab navigation where multiple URLs should reuse the same widget instance.
+  
+  ```dart
+  NavigationData(
+    label: 'home',
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(tab: 'home'),
+    group: HomePage.name,
+  ),
+  NavigationData(
+    label: 'games',
+    url: '/games',
+    builder: (context, routeData, globalData) => HomePage(tab: 'games'),
+    group: HomePage.name,
+  ),
+  ```
+</ParamField>
+
+## Computed properties
+
+<ParamField path="uri" type="Uri">
+  The parsed URI from the `url` property.
+  
+  ```dart
+  final navigationData = NavigationData(
+    url: '/projects?category=flutter',
+    builder: (context, routeData, globalData) => ProjectsPage(),
+  );
+  
+  print(navigationData.uri); // Prints parsed Uri object
+  ```
+</ParamField>
+
+<ParamField path="path" type="String">
+  The canonical path from the `url`, without query parameters.
+  
+  ```dart
+  final navigationData = NavigationData(
+    url: '/projects?category=flutter',
+    builder: (context, routeData, globalData) => ProjectsPage(),
+  );
+  
+  print(navigationData.path); // Prints '/projects'
+  ```
+</ParamField>
+
+<ParamField path="queryParameters" type="Map<String, String>">
+  The query parameters extracted from the `url`.
+  
+  ```dart
+  final navigationData = NavigationData(
+    url: '/projects?category=flutter&sort=recent',
+    builder: (context, routeData, globalData) => ProjectsPage(),
+  );
+  
+  print(navigationData.queryParameters); 
+  // Prints {'category': 'flutter', 'sort': 'recent'}
+  ```
+</ParamField>
+
+## Usage examples
+
+### Basic route
+
+```dart
+NavigationData(
+  url: '/home',
+  builder: (context, routeData, globalData) => const HomePage(),
+)
+```
+
+### Named route with query parameters
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.queryParameters['id'] ?? ''),
+  ),
+)
+```
+
+### Route with path parameters
+
+```dart
+NavigationData(
+  label: ProjectPage.name,
+  url: '/project/:projectId',
+  builder: (context, routeData, globalData) => ProjectPage(
+    id: int.tryParse(routeData.pathParameters['projectId'] ?? ''),
+  ),
+)
+```
+
+### Grouped routes for tab navigation
+
+```dart
+List<NavigationData> routes = [
+  NavigationData(
+    label: 'home',
+    url: '/',
+    builder: (context, routeData, globalData) => HomePage(tab: 'home'),
+    group: 'home_tabs',
+  ),
+  NavigationData(
+    label: 'games',
+    url: '/games',
+    builder: (context, routeData, globalData) => HomePage(tab: 'games'),
+    group: 'home_tabs',
+  ),
+  NavigationData(
+    label: 'apps',
+    url: '/apps',
+    builder: (context, routeData, globalData) => HomePage(tab: 'apps'),
+    group: 'home_tabs',
+  ),
+];
+```
+
+<Note>
+All three routes share the same widget instance due to the common `group` value. Navigating between tabs updates the widget instead of recreating it.
+</Note>
+
+### Route with custom page type
+
+```dart
+NavigationData(
+  url: '/modal',
+  pageType: PageType.transparent,
+  barrierColor: Colors.black54,
+  builder: (context, routeData, globalData) => const ModalPage(),
+)
+```
+
+### Route with metadata for guards
+
+```dart
+NavigationData(
+  url: '/admin',
+  metadata: {
+    'requiresAuth': true,
+    'requiredRole': 'admin',
+  },
+  builder: (context, routeData, globalData) => const AdminPage(),
+)
+```
+
+## Type definitions
+
+### NavigationPageFactory
+
+```dart
+typedef NavigationPageFactory = Widget Function(
+  BuildContext context,
+  DefaultRoute routeData,
+  Map<String, dynamic> globalData
+);
+```
+
+Function type for building navigation pages. This function is called to build the widget for a given route.
+
+### CustomPageBuilder
+
+```dart
+typedef CustomPageBuilder = Page Function(
+  ValueKey<String>? key,
+  String? name,
+  Widget child,
+  DefaultRoute routeData,
+  Map<String, dynamic> globalData,
+  Object? arguments,
+);
+```
+
+Function type for custom page building. Allows custom creation of `Page` objects with full control over the page configuration.
+
+<Warning>
+The `url` property must start with `/`. If it doesn't, an assertion error will be thrown during initialization.
+</Warning>
+
+<Tip>
+Use the `label` property for named navigation to make your code more maintainable and less prone to typos when referencing routes.
+</Tip>

@@ -1,0 +1,370 @@
+---
+title: Route guards
+description: Protect routes with authentication, custom guards, and conditional navigation
+---
+
+Route guards allow you to control access to pages based on conditions like authentication status, user permissions, or custom logic. NavigationUtils provides multiple ways to implement route guards.
+
+## Authentication guard
+
+The most common route guard is authentication. NavigationUtils provides built-in support through the `authenticationRequired` property.
+
+### Setup
+
+<Steps>
+  <Step title="Annotate DeeplinkDestination">
+    Mark deeplinks that require authentication:
+    
+    ```dart
+    DeeplinkDestination(
+      deeplinkUrl: '/deeplink/profile',
+      destinationUrl: '/profile',
+      authenticationRequired: true,
+    )
+    ```
+  </Step>
+  
+  <Step title="Pass authentication state">
+    Provide the current authentication status when opening deeplinks:
+    
+    ```dart
+    NavigationUtils.openDeeplinkDestination(
+      uri: uri,
+      deeplinkDestinations: deeplinkDestinations,
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      authenticated: AuthService.instance.isAuthenticated,
+    );
+    ```
+  </Step>
+</Steps>
+
+When `authenticationRequired` is `true` and `authenticated` is `false`, navigation is automatically blocked.
+
+### Route-level authentication guard
+
+Implement authentication guards for all routes using the `setMainRoutes` callback:
+
+From `example_auth/lib/main.dart:126-151`:
+
+```dart
+List<DefaultRoute> setMainRoutes(List<DefaultRoute> routes) {
+  List<DefaultRoute> routesHolder = routes;
+  // Authenticated route guard.
+  if (AuthService.instance.isAuthenticated.value == false) {
+    routesHolder.removeWhere((element) => element.metadata?['auth'] == true);
+    if (routesHolder.isEmpty) {
+      routesHolder.add(DefaultRoute(label: SignUpForm.name, path: '/signup'));
+      NavigationManager.instance.resumeNavigation();
+    }
+  }
+  // Remove login and signup page guard.
+  if (AuthService.instance.isAuthenticated.value) {
+    routesHolder
+        .removeWhere((element) => element.metadata?['type'] == 'auth');
+    if (routesHolder.isEmpty) {
+      routesHolder.add(NavigationUtils.buildDefaultRouteFromName(
+          navigation_routes.routes, '/'));
+    }
+  }
+  return routesHolder;
+}
+```
+
+Attach this callback in your app initialization:
+
+From `example_auth/lib/main.dart:65-66`:
+
+```dart
+NavigationManager.instance.setMainRoutes =
+    (routes) => setMainRoutes(routes);
+```
+
+### Marking routes as authenticated
+
+Tag routes that require authentication using metadata:
+
+From `example_auth/lib/navigation_routes.dart:8-12`:
+
+```dart
+NavigationData(
+    label: HomePage.name,
+    url: '/',
+    builder: (context, routeData, globalData) => const HomePage(),
+    metadata: {'auth': true}),
+```
+
+<Note>
+The `metadata` field is a flexible `Map<String, dynamic>` that can hold any custom data for your route guards.
+</Note>
+
+## Exclude deeplink navigation pages
+
+Prevent deeplinks from navigating when users are on certain pages like onboarding or tutorials.
+
+### Global exclusion list
+
+Define pages that should never be interrupted by deeplinks:
+
+```dart
+List<String> doNotNavigateDeeplinkPages = [
+  OnboardingPage.name,
+  TutorialPage.name,
+  SetupWizard.name,
+];
+
+NavigationUtils.openDeeplinkDestination(
+  uri: uri,
+  deeplinkDestinations: deeplinkDestinations,
+  routerDelegate: NavigationManager.instance.routerDelegate,
+  currentRoute: NavigationManager.instance.currentRoute,
+  excludeDeeplinkNavigationPages: doNotNavigateDeeplinkPages,
+);
+```
+
+### Per-deeplink exclusion
+
+Exclude specific pages for individual deeplinks:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/settings',
+  destinationUrl: '/settings',
+  excludeDeeplinkNavigationPages: [PaymentPage.name, CheckoutPage.name],
+)
+```
+
+<Warning>
+Both the global `excludeDeeplinkNavigationPages` parameter and the per-deeplink `excludeDeeplinkNavigationPages` property accept both named routes and path routes.
+</Warning>
+
+## Custom route guards with metadata
+
+Create custom guards by tagging routes with metadata and checking them before navigation.
+
+### Setup
+
+<Steps>
+  <Step title="Tag routes with metadata">
+    Add custom metadata to your routes:
+    
+    ```dart
+    NavigationData(
+      label: PremiumMemberPage.name,
+      url: '/premium_page',
+      builder: (context, routeData, globalData) => const PremiumPage(),
+      metadata: {'userStatus': 'PREMIUM'},
+    )
+    ```
+  </Step>
+  
+  <Step title="Check metadata before navigation">
+    Implement custom guard logic:
+    
+    ```dart
+    if (NavigationManager.instance.routerDelegate
+        .currentConfiguration?.metadata?['userStatus'] == 'PREMIUM') {
+      DefaultRouteParser.openDeeplink(uri);
+    } else {
+      // Redirect to upgrade page
+      NavigationManager.instance.push(UpgradePage.name);
+    }
+    ```
+  </Step>
+</Steps>
+
+### Common custom guards
+
+#### Permission-based guard
+
+```dart
+NavigationData(
+  url: '/admin',
+  builder: (context, routeData, globalData) => const AdminPage(),
+  metadata: {'requiredPermission': 'admin'},
+)
+```
+
+Check permission before navigating:
+
+```dart
+void navigateIfAuthorized(String route) {
+  NavigationData? navData = NavigationUtils.getNavigationDataFromName(
+    routes,
+    route,
+  );
+  
+  String? requiredPermission = navData?.metadata?['requiredPermission'];
+  
+  if (requiredPermission == null || 
+      UserService.instance.hasPermission(requiredPermission)) {
+    NavigationManager.instance.push(route);
+  } else {
+    // Show error or redirect
+    showPermissionDeniedDialog();
+  }
+}
+```
+
+#### Subscription-based guard
+
+```dart
+NavigationData(
+  url: '/pro-features',
+  builder: (context, routeData, globalData) => const ProFeaturesPage(),
+  metadata: {'requiresSubscription': true},
+)
+```
+
+#### Role-based guard
+
+```dart
+NavigationData(
+  url: '/moderator/dashboard',
+  builder: (context, routeData, globalData) => const ModeratorDashboard(),
+  metadata: {
+    'requiredRoles': ['moderator', 'admin'],
+  },
+)
+```
+
+## Conditional navigation with shouldNavigateDeeplinkFunction
+
+Prevent navigation based on custom runtime conditions:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/premium',
+  destinationUrl: '/premium',
+  shouldNavigateDeeplinkFunction: () {
+    // Only navigate if user has premium
+    if (UserService.instance.isPremium) return true;
+    
+    // Show upgrade dialog instead
+    showUpgradeDialog();
+    return false;
+  },
+)
+```
+
+### Async navigation guards
+
+Perform async checks before navigation:
+
+```dart
+DeeplinkDestination(
+  deeplinkUrl: '/deeplink/secure',
+  destinationUrl: '/secure',
+  shouldNavigateDeeplinkFunction: () async {
+    // Wait for biometric verification
+    bool isVerified = await BiometricService.verify();
+    
+    if (!isVerified) {
+      showAuthenticationFailedDialog();
+      return false;
+    }
+    
+    return true;
+  },
+)
+```
+
+<Tip>
+Async navigation allows you to perform operations like:
+- Biometric authentication
+- Fetching user permissions from an API
+- Checking feature flags
+- Validating session tokens
+</Tip>
+
+## Protecting routes during auth state changes
+
+Handle navigation when authentication state changes:
+
+From `example_auth/lib/main.dart:96-112`:
+
+```dart
+Future<void> onUserAuthenticated(String uid) async {
+  // Attempt to load the initial route URI.
+  if (loadInitialRoute) {
+    loadInitialRoute = false;
+    initialized = true;
+    String initialRoute =
+        NavigationManager.instance.routeInformationParser.initialRoute;
+    NavigationManager.instance.set([initialRoute]);
+  } else {
+    NavigationManager.instance.set([HomePage.name]);
+  }
+
+  NavigationManager.instance.resumeNavigation();
+}
+
+Future<void> onUserUnauthenticated() async {
+  // Automatically navigate to auth screen when user is logged out.
+  if (NavigationManager.instance.currentRoute?.metadata?['auth'] == true) {
+    NavigationManager.instance.set([SignUpForm.name]);
+  }
+  NavigationManager.instance.resumeNavigation();
+  SignoutHelper.signOut();
+}
+```
+
+<Note>
+Use `pauseNavigation()` and `resumeNavigation()` to temporarily halt navigation during authentication state transitions.
+</Note>
+
+## Best practices
+
+<Tip>
+**Use metadata consistently**
+
+Define constants for metadata keys:
+
+```dart
+class RouteMetadata {
+  static const String auth = 'auth';
+  static const String permission = 'permission';
+  static const String subscription = 'subscription';
+}
+
+NavigationData(
+  url: '/admin',
+  metadata: {
+    RouteMetadata.auth: true,
+    RouteMetadata.permission: 'admin',
+  },
+)
+```
+</Tip>
+
+<Tip>
+**Provide fallback routes**
+
+Always redirect to a valid route when blocking navigation:
+
+```dart
+if (AuthService.instance.isAuthenticated.value == false) {
+  routesHolder.removeWhere((element) => element.metadata?['auth'] == true);
+  if (routesHolder.isEmpty) {
+    // Fallback to signup if no valid routes remain
+    routesHolder.add(DefaultRoute(label: SignUpForm.name, path: '/signup'));
+  }
+}
+```
+</Tip>
+
+<Warning>
+**Don't rely solely on client-side guards**
+
+Route guards in the app only protect the UI. Always validate permissions and authentication on your backend as well.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Deeplinks" icon="link" href="/guides/deeplinks">
+    Learn about deeplink authentication and conditional navigation
+  </Card>
+  <Card title="Custom transitions" icon="sparkles" href="/guides/custom-transitions">
+    Customize page transitions and animations
+  </Card>
+</CardGroup>

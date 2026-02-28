@@ -1,0 +1,600 @@
+---
+title: Navigation manager
+description: Learn about the NavigationManager singleton that provides centralized navigation operations
+---
+
+The `NavigationManager` is a singleton class that provides a centralized interface for all navigation operations in NavigationUtils. It manages the router delegate and route information parser, acting as the main entry point for navigation throughout your application.
+
+## Overview
+
+NavigationManager implements the singleton pattern, ensuring there is only one instance managing navigation across your entire application. It implements the `NavigationInterface` and provides access to all navigation methods.
+
+```dart
+// Access the singleton instance
+NavigationManager.instance.push('/projects');
+```
+
+## Initialization
+
+Before using `NavigationManager.instance`, you must initialize it with `init()`. This should be done in your `main()` function before `runApp()`.
+
+```dart
+void main() {
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(
+      navigationDataRoutes: routes
+    ),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  runApp(const MyApp());
+}
+```
+
+<ParamField path="mainRouterDelegate" type="BaseRouterDelegate" required>
+  The router delegate to use for managing navigation. Typically an instance of `DefaultRouterDelegate`.
+</ParamField>
+
+<ParamField path="routeInformationParser" type="DefaultRouteInformationParser" required>
+  The route information parser to use for parsing URLs into route data.
+</ParamField>
+
+<Warning>
+Calling `NavigationManager.instance` before calling `init()` will throw an exception:
+
+```
+NavigationManager has not been initialized. 
+Call `init()` to initialize before using.
+```
+</Warning>
+
+## App configuration
+
+Once initialized, configure your MaterialApp to use the NavigationManager's router delegate and route information parser:
+
+```dart
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+<Note>
+Navigator 2 uses `MaterialApp.router` instead of `MaterialApp`. The `routerDelegate` and `routeInformationParser` replace the `routes` and `onGenerateRoute` builders from Navigator 1.
+</Note>
+
+## Properties
+
+<ParamField path="instance" type="NavigationManager" static>
+  Gets the singleton instance of NavigationManager. Throws an exception if `init()` has not been called.
+  
+  ```dart
+  final manager = NavigationManager.instance;
+  ```
+</ParamField>
+
+<ParamField path="routerDelegate" type="BaseRouterDelegate">
+  The router delegate managing navigation. Provides access to the underlying navigation state.
+  
+  ```dart
+  final delegate = NavigationManager.instance.routerDelegate;
+  ```
+</ParamField>
+
+<ParamField path="routeInformationParser" type="DefaultRouteInformationParser">
+  The route information parser used for parsing URLs.
+  
+  ```dart
+  final parser = NavigationManager.instance.routeInformationParser;
+  ```
+</ParamField>
+
+<ParamField path="currentRoute" type="DefaultRoute?">
+  The current route, or `null` if no route is active.
+  
+  ```dart
+  final current = NavigationManager.instance.currentRoute;
+  if (current != null) {
+    print('Current path: ${current.path}');
+  }
+  ```
+</ParamField>
+
+<ParamField path="routes" type="List<DefaultRoute>">
+  The current list of routes in the navigation stack.
+  
+  ```dart
+  final stack = NavigationManager.instance.routes;
+  print('Stack depth: ${stack.length}');
+  ```
+</ParamField>
+
+<ParamField path="getCurrentRoute" type="Stream<DefaultRoute>">
+  Stream of current route changes. Subscribe to this stream to react to navigation events.
+  
+  ```dart
+  NavigationManager.instance.getCurrentRoute.listen((route) {
+    print('Navigated to: ${route.path}');
+  });
+  ```
+</ParamField>
+
+## Callbacks and configuration
+
+<ParamField path="setMainRoutes" type="SetMainRoutesCallback?">
+  Sets the callback for customizing the route stack. This allows you to intercept and modify the navigation stack before it's applied.
+  
+  ```dart
+  NavigationManager.instance.setMainRoutes = (routes) {
+    // Custom logic to modify routes
+    return routes;
+  };
+  ```
+</ParamField>
+
+<ParamField path="setInitialRouteFunction" type="DefaultRoute Function(Uri)?">
+  Sets the function to determine the initial route from a URI. Useful for handling deep links on app launch.
+  
+  ```dart
+  NavigationManager.instance.setInitialRouteFunction = (uri) {
+    if (uri.path.startsWith('/deeplink')) {
+      return DefaultRoute(path: '/home');
+    }
+    return DefaultRoute(path: uri.path);
+  };
+  ```
+</ParamField>
+
+<ParamField path="setInitialRoutePathFunction" type="String Function(Uri)?">
+  Sets the function to determine the initial route path from a URI.
+  
+  ```dart
+  NavigationManager.instance.setInitialRoutePathFunction = (uri) {
+    // Custom logic to extract path
+    return uri.path;
+  };
+  ```
+</ParamField>
+
+## Core navigation methods
+
+### push
+
+Pushes a new route onto the navigation stack.
+
+```dart
+Future<dynamic> push(
+  String name, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  bool apply = true,
+})
+```
+
+**Examples:**
+
+```dart
+// Simple navigation
+NavigationManager.instance.push('/projects');
+
+// With query parameters
+NavigationManager.instance.push(
+  '/project',
+  queryParameters: {'id': '320'},
+);
+
+// With path parameters
+NavigationManager.instance.push(
+  ProjectPage.name,
+  pathParameters: {'projectId': '320'},
+);
+
+// With global data
+NavigationManager.instance.push(
+  PostPage.name,
+  data: {'postModel': postModel},
+);
+```
+
+### pushRoute
+
+Pushes a route object directly onto the navigation stack.
+
+```dart
+Future<dynamic> pushRoute(DefaultRoute route, {bool apply = true})
+```
+
+**Example:**
+
+```dart
+final route = DefaultRoute(
+  path: '/projects',
+  queryParameters: {'category': 'flutter'},
+);
+NavigationManager.instance.pushRoute(route);
+```
+
+### pop
+
+Pops the current route from the navigation stack.
+
+```dart
+void pop([dynamic result, bool apply = true, bool all = false])
+```
+
+**Examples:**
+
+```dart
+// Simple pop
+NavigationManager.instance.pop();
+
+// Pop with result
+NavigationManager.instance.pop('user_saved');
+
+// Pop all routes
+NavigationManager.instance.pop(null, true, true);
+```
+
+### pushReplacement
+
+Replaces the current route with a new one.
+
+```dart
+Future<dynamic> pushReplacement(
+  String name, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  dynamic result,
+  bool apply = true,
+})
+```
+
+**Example:**
+
+```dart
+NavigationManager.instance.pushReplacement(
+  '/home',
+  result: 'login_success',
+);
+```
+
+### pushAndRemoveUntil
+
+Pushes a new route and removes all routes until a specific route.
+
+```dart
+Future<dynamic> pushAndRemoveUntil(
+  String name,
+  String routeUntilName, {
+  Map<String, String>? queryParameters,
+  Object? arguments,
+  Map<String, dynamic> data = const {},
+  Map<String, String> pathParameters = const {},
+  bool apply = true,
+  bool inclusive = false,
+})
+```
+
+**Example:**
+
+```dart
+// Navigate to home and clear backstack until login
+NavigationManager.instance.pushAndRemoveUntil(
+  '/home',
+  '/login',
+  inclusive: true,
+);
+```
+
+### popUntil
+
+Pops routes until a specific route is reached.
+
+```dart
+void popUntil(
+  String name, {
+  bool apply = true,
+  bool all = false,
+  bool inclusive = false,
+})
+```
+
+**Example:**
+
+```dart
+// Pop until home page
+NavigationManager.instance.popUntil('/home');
+
+// Pop until home page, including home itself
+NavigationManager.instance.popUntil('/home', inclusive: true);
+```
+
+## Stack manipulation methods
+
+### remove
+
+Removes a specific route from the stack by name.
+
+```dart
+void remove(String name, {bool apply = true})
+```
+
+### removeRoute
+
+Removes a specific route object from the stack.
+
+```dart
+void removeRoute(DefaultRoute route, {bool apply = true})
+```
+
+### removeGroup
+
+Removes all routes with a specific group name.
+
+```dart
+void removeGroup(String name, {bool apply = true, bool all = false})
+```
+
+### set
+
+Sets the entire navigation stack with a list of route names.
+
+```dart
+void set(List<String> names, {bool apply = true})
+```
+
+**Example:**
+
+```dart
+NavigationManager.instance.set(['/home', '/projects', '/project']);
+```
+
+### setRoutes
+
+Sets the entire navigation stack with a list of route objects.
+
+```dart
+void setRoutes(List<DefaultRoute> routes, {bool apply = true})
+```
+
+### setBackstack
+
+Sets the backstack while preserving the current route at the top.
+
+```dart
+void setBackstack(List<String> names, {bool apply = true})
+```
+
+## Query parameters
+
+### setQueryParameters
+
+Updates query parameters for the current route.
+
+```dart
+void setQueryParameters(
+  Map<String, String> queryParameters,
+  {bool apply = true}
+)
+```
+
+**Example:**
+
+```dart
+NavigationManager.instance.setQueryParameters({
+  'filter': 'active',
+  'sort': 'recent',
+});
+```
+
+## Special operations
+
+### pauseNavigation
+
+Pauses navigation and displays a loading indicator until `resumeNavigation` is called.
+
+```dart
+void pauseNavigation({Page Function(String name)? pageBuilder})
+```
+
+**Example:**
+
+```dart
+void main() async {
+  NavigationManager.init(
+    mainRouterDelegate: DefaultRouterDelegate(
+      navigationDataRoutes: routes
+    ),
+    routeInformationParser: DefaultRouteInformationParser(),
+  );
+  
+  // Pause navigation while loading auth state
+  NavigationManager.instance.pauseNavigation();
+  
+  runApp(const MyApp());
+  
+  // Wait for auth state
+  await AuthService.initialize();
+  
+  // Resume navigation
+  NavigationManager.instance.resumeNavigation();
+}
+```
+
+<Note>
+This is useful for waiting on authentication and initialization before allowing navigation. The URL is preserved during the pause.
+</Note>
+
+### resumeNavigation
+
+Resumes navigation after `pauseNavigation` has been called.
+
+```dart
+void resumeNavigation()
+```
+
+### setOverride
+
+Overrides all routes with a custom page builder.
+
+```dart
+void setOverride(
+  Page Function(String name) pageBuilder,
+  {bool apply = true}
+)
+```
+
+### removeOverride
+
+Removes the page override.
+
+```dart
+void removeOverride({bool apply = true})
+```
+
+### setOverlay
+
+Adds an overlay page above the navigation stack without triggering URL changes.
+
+```dart
+void setOverlay(
+  Page Function(String name) pageBuilder,
+  {bool apply = true}
+)
+```
+
+**Example:**
+
+```dart
+// Show lock screen overlay
+NavigationManager.instance.setOverlay(
+  (name) => MaterialPage(
+    child: LockScreen(),
+  ),
+);
+```
+
+### removeOverlay
+
+Removes the overlay page.
+
+```dart
+void removeOverlay({bool apply = true})
+```
+
+## Nested navigation
+
+The `nested` method returns widgets for building nested navigation flows like tabbed interfaces.
+
+```dart
+List<Widget> nested({
+  required BuildContext context,
+  required List<NavigationData> routes,
+  bool removeDuplicates = true,
+})
+```
+
+**Example:**
+
+```dart
+List<Widget> nestedWidgets = NavigationManager.instance.nested(
+  context: context,
+  routes: [
+    NavigationData(
+      url: '/onboarding',
+      builder: (context, routeData, globalData) => OnboardingHome(),
+    ),
+    NavigationData(
+      url: '/onboarding/step1',
+      builder: (context, routeData, globalData) => OnboardingPage1(),
+    ),
+  ],
+);
+```
+
+<Note>
+Nested routes must be defined globally with the same `group` label before using the `nested` method.
+</Note>
+
+## Advanced methods
+
+### navigate
+
+Forces the router to create a new browser history entry.
+
+```dart
+void navigate(BuildContext context, Function function)
+```
+
+### neglect
+
+Runs navigation without creating a new browser history entry.
+
+```dart
+void neglect(BuildContext context, Function function)
+```
+
+### apply
+
+Manually applies pending navigation changes.
+
+```dart
+void apply()
+```
+
+**Example:**
+
+```dart
+// Batch multiple navigation operations
+NavigationManager.instance.push('/page1', apply: false);
+NavigationManager.instance.push('/page2', apply: false);
+NavigationManager.instance.push('/page3', apply: false);
+
+// Apply all at once
+NavigationManager.instance.apply();
+```
+
+### clear
+
+Clears all navigation routes.
+
+```dart
+void clear()
+```
+
+<Warning>
+Do not call `clear()` without immediately setting a new route stack, as navigation requires at least one page at all times.
+</Warning>
+
+## Singleton pattern benefits
+
+The singleton pattern provides several advantages:
+
+- **Global access**: Access navigation from anywhere in your app without passing references
+- **Consistent state**: Single source of truth for navigation state
+- **Memory efficient**: Only one instance exists throughout the app lifecycle
+- **Simple API**: No need for dependency injection or context passing
+
+```dart
+// Access from anywhere in your code
+class MyService {
+  void navigateToHome() {
+    NavigationManager.instance.push('/home');
+  }
+}
+```
+
+<Tip>
+While NavigationManager acts as a dependency injector, you can still use your own DI system by accessing the `routerDelegate` and `routeInformationParser` properties directly.
+</Tip>

@@ -1,0 +1,307 @@
+---
+title: NavigationListenerMixin
+description: Mixins that provide navigation state listening capabilities
+---
+
+Mixins that allow classes to listen to navigation changes and receive callbacks when routes are paused or resumed.
+
+## NavigationListenerMixin
+
+A mixin that provides navigation state listening capabilities to any class.
+
+### Properties
+
+<ResponseField name="mounted" type="bool">
+  Whether the listener is currently mounted.
+</ResponseField>
+
+<ResponseField name="paused" type="bool">
+  Whether the route is currently paused.
+</ResponseField>
+
+<ResponseField name="navigationListener" type="StreamSubscription">
+  The stream subscription for navigation events.
+</ResponseField>
+
+### Methods
+
+#### initNavigationListener
+
+```dart
+void initNavigationListener(BuildContext context, {String? routeName})
+```
+
+Initializes the navigation listener.
+
+<ParamField path="context" type="BuildContext" required>
+  The build context to use for route detection.
+</ParamField>
+
+<ParamField path="routeName" type="String?">
+  Optional route name to track. If not provided, the route name is extracted from the context.
+</ParamField>
+
+#### onRoutePause
+
+```dart
+void onRoutePause({
+  required String oldRouteName,
+  required String newRouteName
+})
+```
+
+Route paused callback. Override this method to handle route pause events.
+
+<ParamField path="oldRouteName" type="String" required>
+  The paused route name.
+</ParamField>
+
+<ParamField path="newRouteName" type="String" required>
+  The resumed route name.
+</ParamField>
+
+The `onRoutePause` callback is useful for pausing a page's updates and background operations that are no longer needed when in the background. Because Flutter keeps Page widgets mounted and preserves their state, "heavy" page processes should be paused in the background.
+
+#### onRouteResume
+
+```dart
+void onRouteResume()
+```
+
+Called when the route becomes active (resumed). Override this method to handle route resume events.
+
+#### disposeNavigationListener
+
+```dart
+void disposeNavigationListener()
+```
+
+Disposes the navigation listener and cancels the subscription. This method should be called when navigation listening is no longer needed.
+
+## NavigationListenerStateMixin
+
+A mixin that provides navigation state listening capabilities to State classes. This mixin automatically initializes navigation listening in `initState` and disposes it in `dispose`, making it convenient for use in StatefulWidgets.
+
+### Properties
+
+<ResponseField name="paused" type="bool">
+  Whether the route is currently paused.
+</ResponseField>
+
+<ResponseField name="navigationListener" type="StreamSubscription">
+  The stream subscription for navigation events.
+</ResponseField>
+
+### Methods
+
+#### setRouteName
+
+```dart
+void setRouteName(String routeName)
+```
+
+Sets the route name to track. If not set, the route name is extracted from the context.
+
+<ParamField path="routeName" type="String" required>
+  The route name to track.
+</ParamField>
+
+#### onRoutePause
+
+```dart
+void onRoutePause({
+  required String oldRouteName,
+  required String newRouteName
+})
+```
+
+Route paused callback. Override this method to handle route pause events.
+
+#### onRouteResume
+
+```dart
+void onRouteResume()
+```
+
+Called when the route becomes active (resumed). Override this method to handle route resume events.
+
+## NavigationListenerChangeNotifierMixin
+
+A mixin that provides navigation state listening capabilities to ChangeNotifier classes. The navigation listener is automatically disposed when the ChangeNotifier is disposed.
+
+### Properties
+
+<ResponseField name="mounted" type="bool">
+  Whether the listener is currently mounted.
+</ResponseField>
+
+<ResponseField name="paused" type="bool">
+  Whether the route is currently paused.
+</ResponseField>
+
+<ResponseField name="navigationListener" type="StreamSubscription">
+  The stream subscription for navigation events.
+</ResponseField>
+
+### Methods
+
+#### initNavigationListener
+
+```dart
+void initNavigationListener(BuildContext context, {String? routeName})
+```
+
+Initializes the navigation listener.
+
+#### onRoutePause
+
+```dart
+void onRoutePause({
+  required String oldRouteName,
+  required String newRouteName
+})
+```
+
+Route paused callback. Override this method to handle route pause events.
+
+#### onRouteResume
+
+```dart
+void onRouteResume()
+```
+
+Called when the route becomes active (resumed). Override this method to handle route resume events.
+
+## Examples
+
+### Using NavigationListenerMixin
+
+```dart
+class MyPageController with NavigationListenerMixin {
+  Timer? _timer;
+
+  void init(BuildContext context) {
+    initNavigationListener(context);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Timer tick');
+    });
+  }
+
+  @override
+  void onRoutePause({required String oldRouteName, required String newRouteName}) {
+    print('Route paused: $oldRouteName -> $newRouteName');
+    _timer?.cancel();
+  }
+
+  @override
+  void onRouteResume() {
+    print('Route resumed');
+    _startTimer();
+  }
+
+  void dispose() {
+    _timer?.cancel();
+    disposeNavigationListener();
+  }
+}
+```
+
+### Using NavigationListenerStateMixin
+
+```dart
+class MyPage extends StatefulWidget {
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> with NavigationListenerStateMixin {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Timer tick');
+    });
+  }
+
+  @override
+  void onRoutePause({required String oldRouteName, required String newRouteName}) {
+    print('Route paused: $oldRouteName -> $newRouteName');
+    _timer?.cancel();
+  }
+
+  @override
+  void onRouteResume() {
+    print('Route resumed');
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('My Page')),
+      body: Center(child: Text('Content')),
+    );
+  }
+}
+```
+
+### Using NavigationListenerChangeNotifierMixin
+
+```dart
+class MyViewModel extends ChangeNotifier with NavigationListenerChangeNotifierMixin {
+  Timer? _timer;
+
+  void init(BuildContext context) {
+    initNavigationListener(context);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      print('Timer tick');
+      notifyListeners();
+    });
+  }
+
+  @override
+  void onRoutePause({required String oldRouteName, required String newRouteName}) {
+    print('Route paused: $oldRouteName -> $newRouteName');
+    _timer?.cancel();
+  }
+
+  @override
+  void onRouteResume() {
+    print('Route resumed');
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
+```
+
+## Notes
+
+- `onRoutePause` is always called before a page is disposed
+- To differentiate between pause and close events, check if the route still exists in the navigation stack
+- The mixin automatically handles subscription cleanup
+- State mixin variant integrates with widget lifecycle automatically

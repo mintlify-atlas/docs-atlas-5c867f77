@@ -1,0 +1,379 @@
+---
+title: Navigation overlays
+description: Display overlay screens like lock screens using setOverlay() and removeOverlay()
+---
+
+NavigationUtils provides overlay functionality to display screens on top of the entire navigation stack. This is perfect for lock screens, system alerts, or full-screen notifications that should appear regardless of the current page.
+
+## What are overlays?
+
+Overlays are pages that appear on top of the entire navigation stack:
+
+- Displayed above all other pages
+- Block interaction with underlying pages
+- Can be shown or removed at any time
+- Independent of the navigation stack
+
+## Basic usage
+
+<Steps>
+  <Step title="Set an overlay">
+    Use `setOverlay()` to display an overlay page:
+
+    ```dart
+    NavigationManager.instance.setOverlay(
+      (name) => MaterialPage(
+        name: name,
+        child: Scaffold(
+          body: Center(
+            child: Text('Overlay Content'),
+          ),
+        ),
+      ),
+    );
+    ```
+  </Step>
+
+  <Step title="Remove the overlay">
+    Use `removeOverlay()` to dismiss the overlay:
+
+    ```dart
+    NavigationManager.instance.removeOverlay();
+    ```
+  </Step>
+</Steps>
+
+## Lock screen example
+
+Here's a complete example showing how to implement a passcode lock screen from `/home/daytona/workspace/source/example/lib/main_lock_screen.dart:1`:
+
+```dart
+class _MyAppState extends State<MyApp> with LifecycleObserverMixin {
+  bool passcodeEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    initLifecycleObserver();
+    if (passcodeEnabled) showPasscodeLock();
+  }
+
+  @override
+  void dispose() {
+    disposeLifecycleObserver();
+    super.dispose();
+  }
+
+  @override
+  void onPaused() {
+    showPasscodeLock();
+  }
+
+  void showPasscodeLock() {
+    // Show lock screen when user switches app or app is backgrounded.
+    NavigationManager.instance.setOverlay(
+      (name) => MaterialPage(
+        name: name,
+        child: Scaffold(
+          body: SizedBox(
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text('Passcode'),
+                ElevatedButton(
+                  onPressed: () => NavigationManager.instance.removeOverlay(),
+                  child: const Text('Unlock')
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Navigation Utils Demo',
+      routerDelegate: NavigationManager.instance.routerDelegate,
+      routeInformationParser: NavigationManager.instance.routeInformationParser,
+    );
+  }
+}
+```
+
+## How it works
+
+This example combines overlays with lifecycle callbacks:
+
+1. When the app initializes, it checks if passcode is enabled
+2. If enabled, it shows the lock screen overlay immediately
+3. When the user backgrounds the app (`onPaused`), the lock screen appears
+4. When the user taps "Unlock", the overlay is removed
+
+## Common use cases
+
+### Authentication lock screen
+
+```dart
+void showAuthLock() {
+  NavigationManager.instance.setOverlay(
+    (name) => MaterialPage(
+      name: name,
+      child: AuthLockScreen(
+        onAuthenticated: () {
+          NavigationManager.instance.removeOverlay();
+        },
+      ),
+    ),
+  );
+}
+```
+
+### Maintenance mode
+
+```dart
+void showMaintenanceMode() {
+  NavigationManager.instance.setOverlay(
+    (name) => MaterialPage(
+      name: name,
+      child: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.construction, size: 64, color: Colors.orange),
+              const SizedBox(height: 24),
+              const Text(
+                'Under Maintenance',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text('We\'ll be back soon!'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+### Force update prompt
+
+```dart
+void showForceUpdate() {
+  NavigationManager.instance.setOverlay(
+    (name) => MaterialPage(
+      name: name,
+      child: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.system_update, size: 64),
+                const SizedBox(height: 24),
+                const Text(
+                  'Update Required',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Please update to the latest version to continue.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    // Open app store
+                  },
+                  child: const Text('Update Now'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+### Network error overlay
+
+```dart
+void showNetworkError() {
+  NavigationManager.instance.setOverlay(
+    (name) => MaterialPage(
+      name: name,
+      child: Scaffold(
+        backgroundColor: Colors.red.shade50,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off, size: 64, color: Colors.red),
+              const SizedBox(height: 24),
+              const Text(
+                'No Internet Connection',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  bool connected = await checkConnection();
+                  if (connected) {
+                    NavigationManager.instance.removeOverlay();
+                  }
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+## Advanced features
+
+### Apply parameter
+
+Both `setOverlay()` and `removeOverlay()` have an optional `apply` parameter:
+
+```dart
+// Set overlay without immediately applying
+NavigationManager.instance.setOverlay(
+  (name) => MaterialPage(
+    name: name,
+    child: MyOverlay(),
+  ),
+  apply: false,
+);
+
+// Apply all pending changes
+NavigationManager.instance.apply();
+```
+
+This is useful when making multiple navigation changes at once.
+
+### Custom page transitions
+
+Use custom page types for different transition effects:
+
+```dart
+NavigationManager.instance.setOverlay(
+  (name) => CustomFadeTransitionPage(
+    name: name,
+    child: MyOverlay(),
+  ),
+);
+```
+
+### Dismissible overlays
+
+Create overlays that can be dismissed by user interaction:
+
+```dart
+NavigationManager.instance.setOverlay(
+  (name) => MaterialPage(
+    name: name,
+    child: GestureDetector(
+      onTap: () => NavigationManager.instance.removeOverlay(),
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: GestureDetector(
+            onTap: () {}, // Prevent dismissal when tapping content
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Alert'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => NavigationManager.instance.removeOverlay(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+```
+
+## Overlays vs pause navigation
+
+Both overlays and pause navigation can display a screen on top of the stack, but they serve different purposes:
+
+| Feature | Overlays | Pause Navigation |
+|---------|----------|------------------|
+| Purpose | Lock screens, alerts, modals | Loading screens, initialization |
+| When to use | Runtime, any time | App startup, before navigation ready |
+| URL preservation | Yes | Yes |
+| Removes existing pages | No | Yes (uses `setOverride`) |
+| Can be stacked | Single overlay at a time | Single override at a time |
+
+<Note>
+  Use overlays for runtime screens like lock screens. Use `pauseNavigation()` for initialization and startup loading screens.
+</Note>
+
+## Best practices
+
+<Steps>
+  <Step title="Clean up when done">
+    Always remove overlays when they're no longer needed:
+
+    ```dart
+    NavigationManager.instance.removeOverlay();
+    ```
+  </Step>
+
+  <Step title="Handle system back button">
+    Decide if the back button should dismiss your overlay:
+
+    ```dart
+    WillPopScope(
+      onWillPop: () async {
+        // Return false to prevent back button from dismissing
+        return false;
+      },
+      child: MyOverlayContent(),
+    )
+    ```
+  </Step>
+
+  <Step title="Combine with lifecycle callbacks">
+    Use lifecycle observers to show overlays at the right time:
+
+    ```dart
+    @override
+    void onPaused() {
+      if (shouldLock) {
+        showLockScreen();
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Test edge cases">
+    Ensure overlays work correctly when:
+    - App is backgrounded and restored
+    - System dialogs appear
+    - Device orientation changes
+  </Step>
+</Steps>

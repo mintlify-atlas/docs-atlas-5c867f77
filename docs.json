@@ -1,122 +1,114 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "NavigationUtils",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#02569B",
+    "light": "#13B9FD",
+    "dark": "#0175C2"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/rayliverified/NavigationUtils"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/rayliverified/NavigationUtils"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/navigation-data",
+              "concepts/navigation-manager",
+              "concepts/routing-parameters",
+              "concepts/cache-behavior"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/basic-navigation",
+              "guides/query-parameters",
+              "guides/path-parameters",
+              "guides/deeplinks",
+              "guides/route-guards",
+              "guides/url-aliases",
+              "guides/custom-transitions",
+              "guides/nested-navigation"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Advanced",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "advanced/global-data",
+              "advanced/lifecycle-callbacks",
+              "advanced/pause-resume-navigation",
+              "advanced/overlays",
+              "advanced/hot-reload"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Navigation",
             "pages": [
-              "api-reference/introduction"
+              "api/navigation-manager",
+              "api/navigation-data",
+              "api/default-route",
+              "api/router-delegate",
+              "api/route-information-parser"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Deeplinks",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/deeplink-destination",
+              "api/deeplink-functions"
+            ]
+          },
+          {
+            "group": "Widgets & Mixins",
+            "pages": [
+              "api/animated-stack",
+              "api/navigation-listener-mixin",
+              "api/lifecycle-observer"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/basic-setup",
+              "examples/authentication-flow",
+              "examples/nested-tabs",
+              "examples/custom-page-transitions"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

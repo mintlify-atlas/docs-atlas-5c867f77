@@ -1,0 +1,160 @@
+---
+title: Passing data with global data
+description: Learn how to pass non-serializable data between pages using globalData
+---
+
+Navigator 2 doesn't support passing arbitrary data like classes or non-serializable objects through URLs. NavigationUtils solves this with `globalData`, allowing you to pass any data between pages.
+
+## What is global data?
+
+`globalData` is a key-value map that lets you pass arbitrary data such as classes, functions, and non-serializable variables between pages. Unlike query parameters (which must be strings), `globalData` can hold any Dart object.
+
+## Basic usage
+
+<Steps>
+  <Step title="Pass data during navigation">
+    Use the `globalData` parameter when pushing a new route:
+
+    ```dart
+    PostModel postModel = PostModel();
+    NavigationManager.instance.push(
+      PostPage.name, 
+      globalData: {'postModel': postModel}
+    );
+    ```
+  </Step>
+
+  <Step title="Access data in route builder">
+    Retrieve the data from the `globalData` parameter in your `NavigationData` builder:
+
+    ```dart
+    NavigationData(
+      label: PostPage.name,
+      url: '/post',
+      builder: (context, routeData, globalData) => PostPage(
+        postModel: globalData['postModel']
+      ),
+    )
+    ```
+  </Step>
+</Steps>
+
+## Accessing global data anywhere
+
+Beyond navigation, you can access and modify `globalData` at any point in your application:
+
+```dart
+// Set or update data
+NavigationManager.instance.routerDelegate.globalData['selected_variant'] = 'A';
+
+// Access data
+String variant = NavigationManager.instance.routerDelegate.globalData['selected_variant'];
+```
+
+This allows you to set data and configurations at any time, not just during navigation.
+
+## Common use cases
+
+### Passing model objects
+
+```dart
+// Navigate with a full model object
+UserModel user = UserModel(id: 123, name: 'John');
+NavigationManager.instance.push(
+  ProfilePage.name,
+  globalData: {'user': user}
+);
+
+// Access in route builder
+NavigationData(
+  label: ProfilePage.name,
+  url: '/profile',
+  builder: (context, routeData, globalData) {
+    UserModel user = globalData['user'];
+    return ProfilePage(user: user);
+  },
+)
+```
+
+### Passing callbacks
+
+```dart
+// Navigate with a callback function
+NavigationManager.instance.push(
+  EditorPage.name,
+  globalData: {
+    'onSave': (String content) {
+      print('Content saved: $content');
+    }
+  }
+);
+
+// Use callback in the page
+NavigationData(
+  label: EditorPage.name,
+  url: '/editor',
+  builder: (context, routeData, globalData) {
+    Function(String) onSave = globalData['onSave'];
+    return EditorPage(onSave: onSave);
+  },
+)
+```
+
+## Important considerations
+
+<Warning>
+  `globalData` is not bound to the page lifecycle. Variables must be manually disposed and cleared when no longer needed.
+</Warning>
+
+### Manual cleanup
+
+Since `globalData` persists beyond page lifecycles, you need to explicitly clear outdated variables:
+
+```dart
+// Clear specific data when done
+NavigationManager.instance.routerDelegate.globalData.remove('postModel');
+
+// Or clear all global data
+NavigationManager.instance.routerDelegate.globalData.clear();
+```
+
+<Note>
+  In most cases, opening a page will set and override the data, so stale variables aren't a concern. However, for data that persists across multiple navigation events, implement proper cleanup.
+</Note>
+
+### Storage implementation
+
+The URL of the page is used as the key for storing data. This means:
+
+- Different pages can have different `globalData`
+- The same page accessed with different URLs may share or have separate data depending on implementation
+
+## Combining with query parameters
+
+You can use both `globalData` and query parameters together:
+
+```dart
+// Pass both URL parameters and objects
+NavigationManager.instance.push(
+  ProductPage.name,
+  queryParameters: {'id': '123'},
+  globalData: {'product': productObject}
+);
+
+// Access both in route builder
+NavigationData(
+  label: ProductPage.name,
+  url: '/product',
+  builder: (context, routeData, globalData) {
+    String? id = routeData.queryParameters['id'];
+    ProductModel? product = globalData['product'];
+    
+    return ProductPage(
+      id: id,
+      preloadedProduct: product,
+    );
+  },
+)
+```
+
+This pattern is useful when you want the URL to reflect the page state (for deep linking and web URLs) while also passing rich objects for immediate rendering.

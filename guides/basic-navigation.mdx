@@ -1,0 +1,139 @@
+---
+title: Basic navigation
+description: Learn how to navigate between pages using push, pop, and pushReplacement methods
+---
+
+NavigationUtils provides a familiar API for navigation that mirrors Navigator 1, making it easy to navigate between pages in your Flutter app using Navigator 2.
+
+## Navigation methods
+
+NavigationUtils supports three primary ways to navigate: by path, by name, or by route object. All navigation functions are accessible through `NavigationManager.instance`.
+
+### Path-based navigation
+
+Path-based routing uses the URL path directly. This is the URL shown in the browser address bar on web platforms.
+
+```dart
+NavigationManager.instance.push('/projects');
+```
+
+### Named navigation
+
+Named routes work just like Navigator 1. Define a static name constant in your page widget and use it for navigation.
+
+```dart
+NavigationManager.instance.push(ProjectsPage.name);
+```
+
+Define the name in your page widget:
+
+```dart
+class ProjectsPage extends StatefulWidget {
+  static const String name = 'projects';
+  
+  @override
+  _ProjectsPageState createState() => _ProjectsPageState();
+}
+```
+
+### Route object navigation
+
+For advanced use cases, navigate using a raw Route object:
+
+```dart
+NavigationManager.instance.pushRoute(DefaultRoute(path: '/projects'));
+```
+
+## Push
+
+Add a new page to the navigation stack:
+
+```dart
+MaterialButton(
+  onPressed: () => NavigationManager.instance.push('/project/1'),
+  child: const Text('Open Project Path'),
+),
+```
+
+From the example app in `example/lib/main.dart:77-79`:
+
+```dart
+MaterialButton(
+  onPressed: () => NavigationManager.instance.push('/project/1'),
+  child: const Text('Open Project Path'),
+),
+```
+
+You can also push using named routes:
+
+```dart
+MaterialButton(
+  onPressed: () => NavigationManager.instance
+      .push(ProjectPage.name, pathParameters: {'id': '2'}),
+  child: const Text('Open Project Named'),
+),
+```
+
+## Pop
+
+Remove the current page from the navigation stack and return to the previous page:
+
+```dart
+ElevatedButton(
+  onPressed: () => NavigationManager.instance.pop(),
+  child: const Text('Back')
+),
+```
+
+From the example app in `example/lib/main.dart:130-131`:
+
+```dart
+ElevatedButton(
+    onPressed: () => NavigationManager.instance.pop(),
+    child: const Text('Back')),
+```
+
+## Push replacement
+
+Replace the current page with a new one without adding to the navigation stack:
+
+```dart
+NavigationManager.instance.pushReplacement('/home');
+```
+
+This is useful for scenarios like:
+- Replacing a login page with the home page after authentication
+- Replacing a splash screen with the main app
+- Replacing an error page with a valid page
+
+<Note>
+The replaced page is removed from the navigation stack, so users cannot navigate back to it using the back button.
+</Note>
+
+## Set routes
+
+For complete control over the navigation stack, use the `set()` method to define the entire route stack:
+
+```dart
+NavigationManager.instance.set([HomePage.name]);
+```
+
+This replaces the entire navigation stack with the specified routes. This is particularly useful for:
+- Resetting navigation state after logout
+- Setting up initial navigation state
+- Implementing custom back stack logic
+
+<Warning>
+Using `set()` replaces the entire navigation stack. Users won't be able to navigate back to any previous pages that aren't included in the new stack.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Query parameters" icon="question" href="/guides/query-parameters">
+    Learn how to pass data between pages using query parameters
+  </Card>
+  <Card title="Path parameters" icon="route" href="/guides/path-parameters">
+    Define dynamic routes with path parameters
+  </Card>
+</CardGroup>
