@@ -1,0 +1,143 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "NavigationUtils",
+  "projectDescription": "The missing navigation library for Flutter's Navigator 2 that simplifies routing with Navigator 1 API patterns.",
+  "theme": "palm",
+  "primaryColor": "#02569B",
+  "lightColor": "#13B9FD",
+  "darkColor": "#0175C2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/navigation-data",
+              "concepts/navigation-manager",
+              "concepts/routing-parameters",
+              "concepts/cache-behavior"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/basic-navigation",
+              "guides/query-parameters",
+              "guides/path-parameters",
+              "guides/deeplinks",
+              "guides/route-guards",
+              "guides/url-aliases",
+              "guides/custom-transitions",
+              "guides/nested-navigation"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/global-data",
+              "advanced/lifecycle-callbacks",
+              "advanced/pause-resume-navigation",
+              "advanced/overlays",
+              "advanced/hot-reload"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Navigation",
+            "pages": [
+              "api/navigation-manager",
+              "api/navigation-data",
+              "api/default-route",
+              "api/router-delegate",
+              "api/route-information-parser"
+            ]
+          },
+          {
+            "group": "Deeplinks",
+            "pages": [
+              "api/deeplink-destination",
+              "api/deeplink-functions"
+            ]
+          },
+          {
+            "group": "Widgets & Mixins",
+            "pages": [
+              "api/animated-stack",
+              "api/navigation-listener-mixin",
+              "api/lifecycle-observer"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/basic-setup",
+              "examples/authentication-flow",
+              "examples/nested-tabs",
+              "examples/custom-page-transitions"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Navigator 1 API reimplemented in Navigator 2 (push, pop, pushAndReplace)",
+    "Full navigation back stack control with set() method",
+    "Named route support with pushNamed() and setNamed()",
+    "Path-based routing with URL parameters",
+    "Query and path parameter support",
+    "Deeplink handling with route guards and authentication",
+    "URL aliases with group parameter",
+    "Custom page transition animations",
+    "Nested navigation support",
+    "Intelligent page caching for performance",
+    "Global data passing between pages",
+    "Lifecycle callbacks and mixins"
+  ],
+  "publicApiSurface": [
+    "NavigationManager.init()",
+    "NavigationManager.instance",
+    "push()",
+    "pop()",
+    "pushRoute()",
+    "pushReplacement()",
+    "pushAndRemoveUntil()",
+    "popUntil()",
+    "set()",
+    "setRoutes()",
+    "remove()",
+    "replace()",
+    "setQueryParameters()",
+    "pauseNavigation()",
+    "resumeNavigation()",
+    "nested()",
+    "NavigationData",
+    "DefaultRoute",
+    "DefaultRouterDelegate",
+    "DefaultRouteInformationParser",
+    "DeeplinkDestination",
+    "NavigationUtils.openDeeplinkDestination()",
+    "AnimatedStack",
+    "NavigationListenerMixin",
+    "LifecycleObserver"
+  ]
+}
